@@ -1,0 +1,126 @@
+[2026-07-12 19:00:35] [INFO] Building APK: IP=10.0.2.2 PORT=8000
+[2026-07-12 19:00:35] [INFO] Config updated: IP=10.0.2.2, PORT=8000
+[2026-07-12 19:00:35] [INFO] Build the APK using Android Studio:
+[2026-07-12 19:00:35] [INFO]   1. Open Android_Code/ in Android Studio
+[2026-07-12 19:00:35] [INFO]   2. Build → Generate Signed APK
+[2026-07-12 19:00:35] [INFO]   3. Or run: cd Android_Code && ./gradlew assembleRelease
+[2026-07-12 19:00:35] [INFO] Encryption key: Buraya kendi şifrenizi girin
+[2026-07-12 19:00:48] [INFO] Building APK: IP=10.0.2.2 PORT=8000
+[2026-07-12 19:00:48] [INFO] Config updated: IP=10.0.2.2, PORT=8000
+[2026-07-12 19:00:48] [INFO] Build the APK using Android Studio:
+[2026-07-12 19:00:48] [INFO]   1. Open Android_Code/ in Android Studio
+[2026-07-12 19:00:48] [INFO]   2. Build → Generate Signed APK
+[2026-07-12 19:00:48] [INFO]   3. Or run: cd Android_Code && ./gradlew assembleRelease
+[2026-07-12 19:00:48] [INFO] Encryption key: EgnakeRAT_v2_SecureKey_2026
+[2026-07-12 20:29:38] [INFO] C2 listening on 0.0.0.0:8000
+[2026-07-12 20:29:38] [INFO] C2 listening on 0.0.0.0:8000
+[2026-07-12 20:29:38] [INFO] Web Dashboard: http://127.0.0.1:5000
+[2026-07-12 20:29:38] [INFO] Open the URL above in your browser
+[2026-07-12 20:33:13] [INFO] C2 listening on 0.0.0.0:8000
+[2026-07-12 20:33:13] [INFO] C2 listening on 0.0.0.0:8000
+[2026-07-12 20:33:13] [INFO] Web Dashboard: http://127.0.0.1:5000
+[2026-07-12 20:33:13] [INFO] Open the URL above in your browser
+[2026-07-12 20:33:17] [INFO] Web client connected
+[2026-07-12 20:33:41] [INFO] Connection from 127.0.0.1:48008
+[2026-07-12 20:33:41] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:33:41] [ERROR] Bad handshake from ('127.0.0.1', 48008)
+[2026-07-12 20:33:41] [INFO] Connection from 127.0.0.1:48010
+[2026-07-12 20:33:42] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:33:42] [ERROR] Bad handshake from ('127.0.0.1', 48010)
+[2026-07-12 20:33:42] [INFO] Connection from 127.0.0.1:48026
+[2026-07-12 20:33:42] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:33:42] [ERROR] Bad handshake from ('127.0.0.1', 48026)
+[2026-07-12 20:33:42] [INFO] Connection from 127.0.0.1:48038
+[2026-07-12 20:33:42] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:33:42] [ERROR] Bad handshake from ('127.0.0.1', 48038)
+[2026-07-12 20:33:47] [INFO] Connection from 127.0.0.1:48052
+[2026-07-12 20:33:47] [INFO] Connection from 127.0.0.1:48066
+[2026-07-12 20:33:47] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:33:47] [ERROR] Bad handshake from ('127.0.0.1', 48052)
+[2026-07-12 20:33:59] [INFO] Web client connected
+[2026-07-12 20:34:16] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:34:16] [ERROR] Bad handshake from ('127.0.0.1', 48066)
+[2026-07-12 20:34:16] [INFO] Connection from 127.0.0.1:49898
+[2026-07-12 20:34:16] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:34:16] [ERROR] Bad handshake from ('127.0.0.1', 49898)
+[2026-07-12 20:34:16] [INFO] Connection from 127.0.0.1:49906
+[2026-07-12 20:34:16] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:34:16] [ERROR] Bad handshake from ('127.0.0.1', 49906)
+[2026-07-12 20:34:17] [INFO] Connection from 127.0.0.1:49908
+[2026-07-12 20:34:17] [INFO] Connection from 127.0.0.1:49912
+[2026-07-12 20:34:17] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:34:17] [ERROR] Bad handshake from ('127.0.0.1', 49908)
+[2026-07-12 20:34:27] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:34:27] [ERROR] Bad handshake from ('127.0.0.1', 49912)
+[2026-07-12 20:34:27] [INFO] Connection from 127.0.0.1:52156
+[2026-07-12 20:34:27] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:34:27] [ERROR] Bad handshake from ('127.0.0.1', 52156)
+[2026-07-12 20:34:27] [INFO] Connection from 127.0.0.1:52164
+[2026-07-12 20:34:27] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:34:27] [ERROR] Bad handshake from ('127.0.0.1', 52164)
+[2026-07-12 20:35:12] [INFO] Web client connected
+[2026-07-12 20:35:15] [INFO] Web client connected
+[2026-07-12 20:36:14] [INFO] Connection from 127.0.0.1:57516
+[2026-07-12 20:36:14] [INFO] Connection from 127.0.0.1:57526
+[2026-07-12 20:36:14] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:36:14] [ERROR] Bad handshake from ('127.0.0.1', 57516)
+[2026-07-12 20:37:15] [ERROR] Bad handshake from ('127.0.0.1', 57526)
+[2026-07-12 20:37:48] [INFO] Web client connected
+[2026-07-12 20:37:55] [INFO] Web client connected
+[2026-07-12 20:40:23] [INFO] Connection from 127.0.0.1:36236
+[2026-07-12 20:40:23] [INFO] Connection from 127.0.0.1:36238
+[2026-07-12 20:40:23] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:40:23] [ERROR] Bad handshake from ('127.0.0.1', 36236)
+[2026-07-12 20:40:28] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:40:28] [ERROR] Bad handshake from ('127.0.0.1', 36238)
+[2026-07-12 20:40:28] [INFO] Connection from 127.0.0.1:36254
+[2026-07-12 20:40:28] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:40:28] [ERROR] Bad handshake from ('127.0.0.1', 36254)
+[2026-07-12 20:40:28] [INFO] Connection from 127.0.0.1:36268
+[2026-07-12 20:40:28] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:40:28] [ERROR] Bad handshake from ('127.0.0.1', 36268)
+[2026-07-12 20:40:58] [INFO] Connection from 127.0.0.1:54640
+[2026-07-12 20:40:58] [INFO] Connection from 127.0.0.1:54656
+[2026-07-12 20:40:58] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:40:58] [ERROR] Bad handshake from ('127.0.0.1', 54640)
+[2026-07-12 20:41:58] [ERROR] Bad handshake from ('127.0.0.1', 54656)
+[2026-07-12 20:42:58] [INFO] Connection from 127.0.0.1:55254
+[2026-07-12 20:42:58] [INFO] Connection from 127.0.0.1:55258
+[2026-07-12 20:42:58] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:42:58] [ERROR] Bad handshake from ('127.0.0.1', 55254)
+[2026-07-12 20:43:24] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:43:24] [ERROR] Bad handshake from ('127.0.0.1', 55258)
+[2026-07-12 20:43:24] [INFO] Connection from 127.0.0.1:34024
+[2026-07-12 20:43:24] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:43:24] [ERROR] Bad handshake from ('127.0.0.1', 34024)
+[2026-07-12 20:43:24] [INFO] Connection from 127.0.0.1:34032
+[2026-07-12 20:43:24] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:43:24] [ERROR] Bad handshake from ('127.0.0.1', 34032)
+[2026-07-12 20:51:52] [INFO] C2 listening on 0.0.0.0:8000
+[2026-07-12 20:51:52] [INFO] C2 listening on 0.0.0.0:8000
+[2026-07-12 20:51:52] [INFO] Web Dashboard: http://127.0.0.1:5000
+[2026-07-12 20:51:52] [INFO] Open the URL above in your browser
+[2026-07-12 20:57:21] [INFO] Connection from 127.0.0.1:36658
+[2026-07-12 20:57:21] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:57:21] [ERROR] Bad handshake from ('127.0.0.1', 36658)
+[2026-07-12 20:57:21] [INFO] Connection from 127.0.0.1:36664
+[2026-07-12 20:57:22] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:57:22] [ERROR] Bad handshake from ('127.0.0.1', 36664)
+[2026-07-12 20:57:22] [INFO] Connection from 127.0.0.1:36668
+[2026-07-12 20:57:22] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:57:22] [ERROR] Bad handshake from ('127.0.0.1', 36668)
+[2026-07-12 20:57:22] [INFO] Connection from 127.0.0.1:36678
+[2026-07-12 20:57:22] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:57:22] [ERROR] Bad handshake from ('127.0.0.1', 36678)
+[2026-07-12 20:57:27] [INFO] Connection from 127.0.0.1:36692
+[2026-07-12 20:57:27] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:57:27] [ERROR] Bad handshake from ('127.0.0.1', 36692)
+[2026-07-12 20:57:27] [INFO] Connection from 127.0.0.1:36694
+[2026-07-12 20:57:57] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:57:57] [ERROR] Bad handshake from ('127.0.0.1', 36694)
+[2026-07-12 20:57:57] [INFO] Connection from 127.0.0.1:45770
+[2026-07-12 20:57:57] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:57:57] [ERROR] Bad handshake from ('127.0.0.1', 45770)
+[2026-07-12 20:57:57] [INFO] Connection from 127.0.0.1:45782
+[2026-07-12 20:57:57] [ERROR] Oversized message from : 1195725856
+[2026-07-12 20:57:57] [ERROR] Bad handshake from ('127.0.0.1', 45782)

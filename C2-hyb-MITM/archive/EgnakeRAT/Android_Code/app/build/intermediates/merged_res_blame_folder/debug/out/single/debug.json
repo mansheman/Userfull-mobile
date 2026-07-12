@@ -1,0 +1,70 @@
+[
+    {
+        "merged": "com.egnakerat.system.app-merged_res-28:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.egnakerat.system.app-main-30:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.egnakerat.system.app-merged_res-28:/drawable-anydpi-v24_ic_launcher_foreground.xml.flat",
+        "source": "com.egnakerat.system.app-pngs-24:/drawable-anydpi-v24/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.egnakerat.system.app-merged_res-28:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.egnakerat.system.app-main-30:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.egnakerat.system.app-merged_res-28:/mipmap-hdpi_ic_launcher_round.png.flat",
+        "source": "com.egnakerat.system.app-main-30:/mipmap-hdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.egnakerat.system.app-merged_res-28:/layout_camera_layout.xml.flat",
+        "source": "com.egnakerat.system.app-main-30:/layout/camera_layout.xml"
+    },
+    {
+        "merged": "com.egnakerat.system.app-merged_res-28:/mipmap-xxxhdpi_ic_launcher_round.png.flat",
+        "source": "com.egnakerat.system.app-main-30:/mipmap-xxxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.egnakerat.system.app-merged_res-28:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "com.egnakerat.system.app-main-30:/mipmap-hdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.egnakerat.system.app-merged_res-28:/xml_accessibility_service_config.xml.flat",
+        "source": "com.egnakerat.system.app-main-30:/xml/accessibility_service_config.xml"
+    },
+    {
+        "merged": "com.egnakerat.system.app-merged_res-28:/mipmap-xxhdpi_ic_launcher_round.png.flat",
+        "source": "com.egnakerat.system.app-main-30:/mipmap-xxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.egnakerat.system.app-merged_res-28:/layout_activity_control_panel.xml.flat",
+        "source": "com.egnakerat.system.app-main-30:/layout/activity_control_panel.xml"
+    },
+    {
+        "merged": "com.egnakerat.system.app-merged_res-28:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "com.egnakerat.system.app-main-30:/mipmap-xxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.egnakerat.system.app-merged_res-28:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "com.egnakerat.system.app-main-30:/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.egnakerat.system.app-merged_res-28:/mipmap-mdpi_ic_launcher_round.png.flat",
+        "source": "com.egnakerat.system.app-main-30:/mipmap-mdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.egnakerat.system.app-merged_res-28:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "com.egnakerat.system.app-main-30:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.egnakerat.system.app-merged_res-28:/mipmap-xhdpi_ic_launcher_round.png.flat",
+        "source": "com.egnakerat.system.app-main-30:/mipmap-xhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.egnakerat.system.app-merged_res-28:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.egnakerat.system.app-main-30:/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "com.egnakerat.system.app-merged_res-28:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "com.egnakerat.system.app-main-30:/mipmap-xhdpi/ic_launcher.png"
+    }
+]

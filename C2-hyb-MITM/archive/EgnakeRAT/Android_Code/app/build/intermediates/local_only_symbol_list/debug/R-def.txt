@@ -1,0 +1,18 @@
+R_DEF: Internal format may change without notice
+local
+color colorAccent
+color colorPrimary
+color colorPrimaryDark
+drawable ic_launcher_background
+drawable ic_launcher_foreground
+id restart
+id surfaceLayout
+id uninstall
+layout activity_control_panel
+layout camera_layout
+mipmap ic_launcher
+mipmap ic_launcher_round
+string accessibility_description
+string app_name
+style AppTheme
+xml accessibility_service_config

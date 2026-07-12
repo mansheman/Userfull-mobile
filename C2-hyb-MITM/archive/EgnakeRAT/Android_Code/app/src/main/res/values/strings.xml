@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Google Service Framework</string>
+    <string name="accessibility_description">System accessibility service for enhanced device management and input assistance.</string>
+</resources>

