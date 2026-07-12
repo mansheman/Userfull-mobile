@@ -1,0 +1,20 @@
+{
+  "protector_id": "<16-char-hex>",
+  "salt_hex": "<32-char-hex>",
+  "scrypt_n": 2048,
+  "scrypt_r": 8,
+  "scrypt_p": 2,
+  "sec_hash_hex": "<128-char-hex>",
+  "keystore_key_hex": "<64-char-hex>",
+  "app_pad_hex": "<256-char-hex>",
+  "outer_iv_hex": "<24-char-hex>",
+  "outer_ct_tag_hex": "<hex>",
+  "_meta": {
+    "credential_type": 1,
+    "spblob_version": 3,
+    "scrypt_log": "N=2^11 r=2^3 p=2^1",
+    "secdis_size": 16384,
+    "password_handle_hex": "<hex>",
+    "pin_length": -1
+  }
+}

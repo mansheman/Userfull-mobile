@@ -1,0 +1,11 @@
+# Sensitive device-specific data
+params.json
+spblob_data/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+
+# Brute-force checkpoint files
+.pattern_brute_checkpoint
