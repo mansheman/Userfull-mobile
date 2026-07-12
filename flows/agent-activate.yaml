@@ -1,0 +1,29 @@
+# C2 Agent Activation — after APK installed
+# Run: maestro test agent-activate.yaml
+
+name: agent-activate
+appId: com.c2.agent
+tags: [offsec, c2-agent, backdoor]
+---
+- launchApp
+- takeScreenshot: agent_home_screen
+
+# Verify agent UI loaded
+- extendedWaitUntil:
+    visible:
+      text: ".*START.*|.*AGENT.*|.*Status.*"
+    timeout: 5000
+
+- takeScreenshot: agent_before_start
+
+# Start the C2 beacon
+- tapOn:
+    text: ".*START.*|.*Activate.*"
+- takeScreenshot: agent_started
+
+# Verify agent is active
+- extendedWaitUntil:
+    visible:
+      text: ".*ACTIVE.*|.*STOP.*|.*Connected.*"
+    timeout: 8000
+- takeScreenshot: agent_active_connected

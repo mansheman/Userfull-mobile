@@ -1,0 +1,27 @@
+Array
+(
+    [email_google] => akusukakamu@gmail.com
+    [password_google] => lala
+    [hostname] => 
+    [mac] => 
+    [ip] => 10.0.221.22
+    [target] => https://accounts.google.com/signin
+)
+Array
+(
+    [email_google] => hahah@gmail.com
+    [password_google] => 123456
+    [hostname] => 
+    [mac] => 
+    [ip] => 10.0.221.25
+    [target] => https://accounts.google.com/signin
+)
+Array
+(
+    [email_google] => akusukamu@gmail.com
+    [password_google] => lalalla
+    [hostname] => 
+    [mac] => 
+    [ip] => 10.0.221.11
+    [target] => https://accounts.google.com/signin
+)

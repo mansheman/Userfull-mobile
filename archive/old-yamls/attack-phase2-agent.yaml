@@ -1,0 +1,21 @@
+name: OffSec Lab - Phase 2 - C2 Agent Activation
+appId: com.c2.agent
+tags: [offsec, c2-agent, backdoor]
+---
+# PHASE 2: After APK installed, activate C2 agent
+- launchApp
+- takeScreenshot: p2_agent_interface
+- assertVisible:
+    text: "START AGENT"
+
+# Activate agent - starts beacon to C2
+- tapOn:
+    text: "START AGENT"
+- takeScreenshot: p2_agent_activated
+
+# Verify agent is connected to C2
+- assertVisible:
+    text: ".*ACTIVE.*|.*STOP AGENT.*"
+- takeScreenshot: p2_c2_connected
+
+# NOTE: After this flow, check http://10.0.2.2:4443/admin for connected agent
