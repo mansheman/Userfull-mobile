@@ -1,0 +1,11 @@
+appId: org.mozilla.firefox
+---
+- tapOn:
+    text: "OK"
+    optional: true
+    repeat: 2
+    delay: 2000
+- extendedWaitUntil:
+    visible: "DONE"
+    timeout: 60000
+- takeScreenshot: exploit-result

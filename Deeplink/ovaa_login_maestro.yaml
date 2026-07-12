@@ -1,0 +1,37 @@
+appId: oversecured.ovaa
+---
+# Maestro Automation Script untuk OVAA Login
+# Target: oversecured.ovaa login screen
+# Credentials: victim@company.com / SuperSecret123!
+
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      text: "Welcome to Oversecured!"
+    timeout: 10000
+- takeScreenshot: /tmp/maestro_screenshots/01_login_screen
+
+# Isi email
+- tapOn:
+    id: "oversecured.ovaa:id/emailView"
+- inputText: "victim@company.com"
+- takeScreenshot: /tmp/maestro_screenshots/02_email_entered
+
+# Isi password
+- tapOn:
+    id: "oversecured.ovaa:id/passwordView"
+- inputText: "SuperSecret123!"
+- takeScreenshot: /tmp/maestro_screenshots/03_password_entered
+
+# Tutup keyboard lalu klik LOGIN
+- pressKey: back
+- takeScreenshot: /tmp/maestro_screenshots/03b_keyboard_closed
+
+- tapOn:
+    text: "LOGIN"
+- extendedWaitUntil:
+    visible:
+      id: "oversecured.ovaa:id/broadcastButton"
+    timeout: 10000
+- takeScreenshot: /tmp/maestro_screenshots/04_logged_in_main
