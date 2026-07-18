@@ -1,0 +1,19 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "mobsf": {
+      "type": "local",
+      "command": [
+        "C:\\Program Files\\nodejs\\npx.cmd",
+        "tsx",
+        "server.ts"
+      ],
+      "cwd": "C:\\Users\\LENOVO\\OneDrive\\Documents\\New OpenCode Project\\mobsf-mcp-server",
+      "environment": {
+        "MOBSF_URL": "http://localhost:8000",
+        "MOBSF_API_KEY": "1f9059ff7684102e8827b52f7bad153e94e67f92997aaff92db693ca34575418"
+      },
+      "enabled": true
+    }
+  }
+}

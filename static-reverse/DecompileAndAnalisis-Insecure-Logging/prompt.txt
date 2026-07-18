@@ -1,0 +1,148 @@
+# Lab 1: Dekompilasi & Analisis Insecure Logging — Prompt Eksekusi
+
+## Tujuan
+Mendemonstrasikan celah insecure logging (CWE-532) pada aplikasi Android InsecureBankv2
+di mana data sensitif nasabah tercetak ke Logcat secara plaintext.
+
+## Target
+- APK: InsecureBankv2.apk
+- Package: com.android.insecurebankv2
+- Source: https://github.com/dineshshetty/Android-InsecureBankv2
+
+---
+
+## Langkah Eksekusi
+
+### Step 1: Dekompilasi APK
+```
+Gunakan JADX untuk mendekompilasi APK target:
+jadx --no-res -d jadx_output InsecureBankv2.apk
+
+Atau via GUI:
+jadx-gui.bat InsecureBankv2.apk
+-> Navigasi ke Source code -> com.android.insecurebankv2
+```
+
+### Step 2: Cari Insecure Logging
+```
+Tekan Ctrl+Shift+F di JADX-GUI, lalu cari:
+- Log.d(
+- System.out.println
+
+Fokus pada file di package com.android.insecurebankv2 (abaikan library/3rd party).
+```
+
+### Step 3: Identifikasi Temuan
+```
+File yang ditemukan mengandung insecure logging:
+
+1. DoTransfer.java:159,178
+   System.out.println mencetak: From, To, Amount (data transfer)
+
+2. DoLogin.java:115
+   Log.d mencetak: username:password (kredensial login)
+
+3. ChangePassword.java:69,128,168
+   System.out.println mencetak: newpassword, phonenumber
+
+4. MyBroadCastReceiver.java:31
+   System.out.println mencetak: phonenumber, password
+```
+
+### Step 4: Proof of Concept — Eksploitasi via ADB
+```
+1. Pastikan perangkat/emulator terhubung:
+   adb devices
+
+2. Buka aplikasi InsecureBankv2 di emulator
+
+3. Monitor log real-time:
+   adb logcat | findstr "Message:"
+   adb logcat | findstr "Successful Login"
+   adb logcat | findstr "newpassword="
+
+4. Lakukan transfer/login di aplikasi
+   -> Data sensitif akan muncul di terminal attacker
+```
+
+### Step 5: Dokumentasi Temuan
+```
+Buat laporan dengan format:
+
+## [ISB-LOG-00X] - [Judul Temuan]
+**Confidence**: Confirmed
+**Severity**: High (CVSS: 7.5)
+**CWE**: CWE-532
+**File**: [path/file.java:line]
+**Code Evidence**: [snippet]
+
+### Attack Scenario
+1. Attacker dengan akses ADB menjalankan adb logcat
+2. Korban melakukan aksi sensitif (transfer/login)
+3. Data terekspos di log
+
+### Proof of Concept
+adb logcat | findstr "[keyword]"
+
+### Remediation
+Hapus logging data sensitif; gunakan ProGuard/R8 untuk strip log di production
+```
+
+---
+
+## Expected Output
+- 4 temuan insecure logging terkonfirmasi
+- Laporan dalam format markdown (.md)
+- PoC command adb logcat siap dieksekusi
+- Struktur artefak lengkap di direktori Mobile-userfull/
+
+## Checklist Verifikasi
+- [ ] APK berhasil didekompilasi
+- [ ] 4 file dengan insecure logging teridentifikasi
+- [ ] Masing-masing temuan memiliki: file path, line number, code evidence
+- [ ] PoC command tervalidasi
+- [ ] Report.md dibuat
+- [ ] Semua artefak tersimpan di Mobile-userfull/
+
+---
+
+## Prompt Cepat untuk AI Agent
+
+```
+Jalankan Lab 1 - Insecure Logging pada APK InsecureBankv2:
+
+1. Dekompilasi APK yang ada di Mobile-userfull/apk/InsecureBankv2.apk
+   menggunakan JADX ke folder decompiled/
+
+2. Cari semua pemanggilan Log.d( dan System.out.println
+   di dalam namespace com.android.insecurebankv2 saja.
+
+3. Untuk setiap temuan, dokumentasikan:
+   - Nama file dan nomor baris
+   - Code snippet
+   - Data sensitif apa yang terekspos
+
+4. Buat PoC exploit: adb logcat command untuk menangkap data tersebut.
+
+5. Tulis laporan lengkap di reports/report.md dengan format:
+   - Executive Summary
+   - Per-finding: ID, Confidence, Severity, CWE, Code Evidence, Attack Scenario, PoC, Remediation
+   - Coverage Statement
+   - Tools Used
+
+6. Hasil akhir: semua file di Mobile-userfull/
+   - apk/InsecureBankv2.apk
+   - decompiled/ (hasil dekompilasi)
+   - reports/report.md (laporan temuan)
+   - skill.md (definisi skill)
+   - prompt.txt (file ini)
+```
+
+---
+
+## Catatan Penting
+- Hanya analisis file di namespace com.android.insecurebankv2
+- Abaikan Log.d() di library pihak ketiga (com.google.*, android.support.*, dll)
+- Jika APK tidak bisa didekompilasi, laporkan DECODE_FAILURE
+- Confidence: Confirmed (karena direct call ke log method dengan data sensitif)
+- Severity: High-Critical (CWE-532, dampak confidentiality)

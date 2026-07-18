@@ -1,0 +1,75 @@
+# MobSF Complete Installation - Tool Versions & Install Commands
+# Generated: 2026-07-13
+# ============================================================
+
+## Core Tools
+# ---------------------
+  Python           : 3.12.10     (C:\Users\LENOVO\AppData\Local\Programs\Python\Python312)
+  Git              : 2.55.0.2    (C:\Program Files\Git)
+  OpenJDK (Temurin): 21.0.11+10  (C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot)
+  Node.js          : 24.18.0 LTS (C:\Program Files\nodejs)
+  npm              : 11.16.0
+
+## Python Tools
+# ---------------------
+  Poetry (build)   : 1.8.4
+  pip              : 26.0.1
+  MobSF            : 4.5.1
+
+## System Dependencies
+# ---------------------
+  wkhtmltopdf      : 0.12.6-1    (C:\Program Files\wkhtmltopdf)
+  Visual Studio Build Tools: Existing (C:\Program Files (x86)\Microsoft Visual Studio)
+  OpenSSL (bundled) : 3.0.16     (via Python)
+
+## Node.js Packages (mobsf-mcp-server)
+# ---------------------
+  @modelcontextprotocol/sdk : 1.29.0
+  axios                     : 1.8.4
+  dotenv                    : 16.4.7
+  tsx                       : 4.19.3
+  typescript                : 5.8.2
+  zod                       : 3.24.2
+  zod-to-json-schema        : 3.24.5
+
+## Install Commands (for fresh setup)
+# ---------------------
+  # Python 3.12+ (already present)
+  # ---
+
+  # Git
+  winget install --id Git.Git -e --source winget
+
+  # OpenJDK 21
+  winget install --id EclipseAdoptium.Temurin.21.JDK -e --source winget
+
+  # Node.js LTS
+  winget install --id OpenJS.NodeJS.LTS -e --source winget
+
+  # wkhtmltopdf
+  winget install --id wkhtmltopdf.wkhtmltox -e --source winget
+
+  # Poetry (Python package manager)
+  python -m pip install poetry==1.8.4
+
+  # MobSF (clone + install)
+  git clone --depth 1 https://github.com/MobSF/Mobile-Security-Framework-MobSF.git mobsf
+  cd mobsf
+  poetry lock
+  poetry install --only main --no-root --no-interaction --no-ansi
+  poetry install --only main --no-interaction --no-ansi
+
+  # Database setup
+  poetry run python manage.py makemigrations
+  poetry run python manage.py makemigrations StaticAnalyzer
+  poetry run python manage.py migrate
+  poetry run python manage.py createsuperuser --noinput --email "mobsf@opensecurity.in"
+  poetry run python manage.py create_roles
+
+  # MCP Server
+  git clone https://github.com/pullkitsan/mobsf-mcp-server.git mobsf-mcp-server
+  cd mobsf-mcp-server
+  npm install
+  npm install @modelcontextprotocol/sdk
+  # Edit server.ts imports to use @modelcontextprotocol/sdk instead of ./sdk/
+  # Create .env with MOBSF_URL and MOBSF_API_KEY

@@ -1,0 +1,36 @@
+=== Lab 3: Environment Info ===
+Date: 2026-07-13
+
+--- Target Device ---
+Model:    sdk_gphone64_x86_64
+SDK:      34
+Release:  14 (Android 14)
+
+--- APK Info ---
+Package:  com.android.insecurebankv2
+Version:  1.0 (versionCode=1)
+Min SDK:  15 (Android 4.0.3)
+Target SDK: 22 (Android 5.1)
+
+--- Manifest Security Flags ---
+debuggable:  true  (CWE-215)
+allowBackup: true  (CWE-200)
+
+--- Package Flags (from dumpsys) ---
+flags=[ DEBUGGABLE HAS_CODE ALLOW_CLEAR_USER_DATA ALLOW_BACKUP ]
+
+--- Tools Used ---
+Java JDK:   C:\jdk-17  (Temurin 17.0.14)
+JADX:       C:\jadx\bin\jadx.bat (1.5.3)
+ADB:        C:\Users\LENOVO\AppData\Local\Android\Sdk\platform-tools\adb.exe
+Emulator:   AVD (Android 14, x86_64)
+
+--- App Directory Contents ---
+/data/data/com.android.insecurebankv2/
+  cache/
+  code_cache/
+  databases/
+    mydb (20480 bytes)
+    mydb-journal
+  shared_prefs/
+    mySharedPreferences.xml (250 bytes, rw-rw-rw-)

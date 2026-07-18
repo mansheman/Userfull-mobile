@@ -1,0 +1,205 @@
+================================================================================
+  MOBSF AUTOMATION PROMPTS
+  Ready-to-use prompts for AI-powered mobile security analysis
+================================================================================
+
+--------------------------------------------------------------------------------
+PROMPT 1: Scan APK Baru
+--------------------------------------------------------------------------------
+
+Jalankan scan static analysis MobSF pada file APK ini:
+[PATH_TO_APK]
+
+Setelah scan selesai, berikan ringkasan temuan:
+- Manifest analysis (severity HIGH/WARNING)
+- Dangerous permissions
+- Exported components
+- Hardcoded secrets
+- Certificate issues
+- Tracker yang terdeteksi
+- Rekomendasi perbaikan
+
+--------------------------------------------------------------------------------
+PROMPT 2: Analisis Scan yang Sudah Ada
+--------------------------------------------------------------------------------
+
+Query database MobSF untuk scan dengan MD5 hash:
+[MD5_HASH]
+
+Berikan analisis lengkap meliputi:
+1. App summary (nama, package, versi, ukuran)
+2. Semua temuan HIGH dari manifest analysis
+3. Daftar permission dangerous beserta deskripsinya
+4. Komponen yang exported (activities, receivers, providers)
+5. Hardcoded secrets yang ditemukan
+6. Tracker privacy (Google Analytics, AdMob, dll.)
+7. Analisis sertifikat (signature, issuer, validity)
+8. Network security issues
+9. Skor keamanan keseluruhan
+10. Rekomendasi prioritas perbaikan
+
+--------------------------------------------------------------------------------
+PROMPT 3: Batch Analysis - Scan Banyak File
+--------------------------------------------------------------------------------
+
+Lakukan batch scan pada file-file berikut:
+[LIST_OF_APK_PATHS]
+
+Untuk setiap APK, tampilkan:
+- Nama aplikasi & package
+- Jumlah temuan HIGH/WARNING
+- Jumlah permission dangerous
+- Apakah debug enabled
+- Apakah allowBackup enabled
+- Skor keamanan (jika ada)
+
+Buat tabel perbandingan di akhir.
+
+--------------------------------------------------------------------------------
+PROMPT 4: Security Assessment Report (Format Lengkap)
+--------------------------------------------------------------------------------
+
+Buat laporan security assessment profesional untuk scan MobSF dengan hash:
+[MD5_HASH]
+
+Format laporan:
+===========================================================
+MOBILE APPLICATION SECURITY ASSESSMENT
+===========================================================
+
+1. EXECUTIVE SUMMARY
+   - App identification
+   - Risk level
+   - Key findings in 1 paragraph
+
+2. APPLICATION DETAILS
+   - Package name, version, size
+   - Hashes (MD5, SHA1, SHA256)
+   - Min/Target SDK
+   - Main activity
+
+3. MANIFEST ANALYSIS
+   - Table: Severity | Rule | Title | Description
+
+4. PERMISSIONS ANALYSIS
+   - Table: Permission | Level | Risk | Description
+
+5. EXPORTED COMPONENTS
+   - List of activities, services, receivers, providers
+   - Risk assessment per component
+
+6. CODE ANALYSIS
+   - Hardcoded secrets
+   - Certificate analysis
+   - APKiD results
+
+7. PRIVACY & TRACKING
+   - Trackers detected
+   - Data collection concerns
+
+8. NETWORK SECURITY
+   - Configuration issues
+   - Domain/URL analysis
+
+9. SBOM (Software Bill of Materials)
+   - Libraries and versions
+
+10. RECOMMENDATIONS
+    - Prioritized list of fixes
+    - High: immediate action
+    - Warning: short-term fix
+    - Info: best practice improvement
+
+11. COMPLIANCE NOTES
+    - OWASP MASVS mapping
+    - GDPR/privacy considerations
+
+--------------------------------------------------------------------------------
+PROMPT 5: Cepat - Temuan Kritis Saja
+--------------------------------------------------------------------------------
+
+Query MobSF untuk scan [MD5_HASH].
+Tampilkan HANYA temuan level HIGH dan WARNING saja, tanpa info/permission detail.
+Format singkat: [SEVERITY] Judul Temuan
+
+--------------------------------------------------------------------------------
+PROMPT 6: Privacy Audit
+--------------------------------------------------------------------------------
+
+Analisis aspek privacy dari hasil scan MobSF [MD5_HASH]:
+1. Tracker yang terdeteksi (nama, kategori, URL)
+2. Permission yang berhubungan dengan data privacy:
+   - Location (ACCESS_*_LOCATION)
+   - Contacts (READ_CONTACTS, GET_ACCOUNTS)
+   - Storage (WRITE/READ_EXTERNAL_STORAGE)
+   - Camera/Mic (CAMERA, RECORD_AUDIO)
+   - SMS/Phone (SEND_SMS, READ_SMS, READ_PHONE_STATE)
+3. Data yang dikirim ke pihak ketiga (domain/URL dari code analysis)
+4. Apakah ada hardcoded PII atau credentials
+5. Rekomendasi privacy compliance
+
+--------------------------------------------------------------------------------
+PROMPT 7: Compare Two Scans
+--------------------------------------------------------------------------------
+
+Bandingkan hasil scan MobSF antara:
+- Scan A: [MD5_HASH_A] ([APP_NAME_A])
+- Scan B: [MD5_HASH_B] ([APP_NAME_B])
+
+Tampilkan perbandingan:
+- Jumlah temuan per severity
+- Permission comparison
+- Tracker comparison
+- Certificate comparison
+- Mana yang lebih secure
+
+--------------------------------------------------------------------------------
+PROMPT 8: Malware Indicator Check
+--------------------------------------------------------------------------------
+
+Periksa indikator malware dari scan MobSF [MD5_HASH]:
+1. APKiD analysis (anti-vm, obfuscation, packer detection)
+2. Permission yang sering disalahgunakan malware
+3. Suspicious activities/services
+4. Domain/IP mencurigakan
+5. Base64 encoded strings
+6. Native library analysis
+7. Kesimpulan: apakah ada indikasi malicious
+
+--------------------------------------------------------------------------------
+PROMPT 9: OWASP MASVS Compliance Check
+--------------------------------------------------------------------------------
+
+Evaluasi hasil scan MobSF [MD5_HASH] terhadap OWASP MASVS (Mobile Application Security Verification Standard):
+
+MASVS-STORAGE: Data storage security
+MASVS-CRYPTO: Cryptography
+MASVS-AUTH: Authentication & Session Management
+MASVS-NETWORK: Network Communication
+MASVS-PLATFORM: Platform Interaction
+MASVS-CODE: Code Quality & Build Settings
+MASVS-RESILIENCE: Resiliency Against Reverse Engineering
+
+Berikan status PASS/FAIL per kategori dengan bukti dari scan result.
+
+--------------------------------------------------------------------------------
+PROMPT 10: One-Click Full Pipeline
+--------------------------------------------------------------------------------
+
+Jalankan pipeline analisis lengkap:
+
+1. Scan file: [PATH_TO_APK]
+2. Setelah scan selesai, ambil report JSON via API
+3. Analisis semua temuan
+4. Generate laporan security assessment (format Prompt 4)
+5. Simpan laporan ke: [OUTPUT_PATH]
+6. Berikan ringkasan eksekutif di akhir
+
+================================================================================
+  NOTES:
+  - Ganti [PATH_TO_APK], [MD5_HASH], [APP_NAME] sesuai kebutuhan
+  - Pastikan MobSF server running di http://127.0.0.1:8000
+  - Untuk MCP: gunakan tool scanFile untuk upload otomatis
+  - Untuk DB query: gunakan script query_scan.py di folder scripts/
+  - Untuk REST API: gunakan script api_test.py di folder scripts/
+================================================================================

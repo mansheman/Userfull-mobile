@@ -1,0 +1,311 @@
+================================================================================
+   SKENARIO: DYNAMIC TRACING VARIABEL SENSITIF DI MEMORI
+   Menggunakan Frida Toolkit (Android & iOS)
+================================================================================
+
+A. DESKRIPSI SKENARIO
+--------------------------------------------------------------------------------
+Skenario ini bertujuan untuk melacak (tracing) variabel-variabel sensitif yang
+tersimpan di memori aplikasi secara real-time selama runtime. Variabel sensitif
+mencakup:
+
+  - Password / PIN / OTP (input user)
+  - Token autentikasi (JWT, Bearer, Session Token)
+  - API Key / Secret Key
+  - Kunci enkripsi (AES, RSA, HMAC) dalam bentuk byte/hex
+  - Data terdekripsi hasil Cipher.doFinal()
+  - Data di SharedPreferences / NSUserDefaults
+  - Data di SQLite database
+  - Data di iOS Keychain / Android Keystore
+  - Data di Clipboard (copy-paste)
+  - String sensitif dari native layer (JNI)
+
+Teknik yang digunakan: Frida dynamic instrumentation hooking terhadap method
+Java/ObjC dan fungsi native C/C++ untuk mengintersepsi pembacaan/penulisan
+data sensitif dari/ke memori.
+
+B. PRASYARAT
+--------------------------------------------------------------------------------
+  1. Host: macOS / Windows / Linux dengan Python 3.8+
+  2. Frida Tools: pip install frida-tools
+  3. Device Android: USB Debugging aktif, rooted (opsional tapi disarankan)
+  4. Device iOS: jailbreak (untuk hook system-level)
+  5. Aplikasi target terpasang di device
+  6. Folder toolkit di C:\Users\LENOVO\OneDrive\Documents\Mobile-userfull\
+     Dynamic-analysis\frida-toolkit\
+
+C. SKRIP YANG DIGUNAKAN
+--------------------------------------------------------------------------------
+  [1] app-hooker.js   - Tracing utama: password field, token, crypto key, SP
+  [2] all-in-one.js   - All-in-one: SharedPreferences, SQLite, Crypto, KeyStore
+  [3] android.js      - Android detail: SP + callstack, SQLite, KeyStore
+  [4] ios.js          - iOS: NSUserDefaults, Keychain, CommonCrypto, Pasteboard
+  [5] native.js       - Native: JNI string, AES key/IV, malloc/mprotect
+  [6] core.js         - Utility: dumpHex(), dumpObj() untuk tampilkan memori
+
+D. LANGKAH-LANGKAH SKENARIO (ANDROID)
+================================================================================
+
+  Langkah 1: Persiapan Device
+  ------------------------------------------------------------------------------
+  a) Sambungkan device Android via USB.
+  b) Verifikasi device terdeteksi:
+       frida-ls-devices
+  c) Pastikan aplikasi target terinstall:
+       frida-ps -Ua
+
+  Langkah 2: Jalankan App-Hooker (Tracing Password + Token + Crypto)
+  ------------------------------------------------------------------------------
+  Skrip paling spesifik untuk tracing variabel sensitif.
+
+  Perintah:
+    frida -U -l app-hooker.js -f com.target.app --no-pause
+
+  Atau via toolkit.py:
+    python toolkit.py --android --spawn com.target.app --module app-hooker
+
+  Apa yang di-trace:
+    - Password dari EditText (inputType TYPE_TEXT_VARIATION_PASSWORD)
+    - Token dari SharedPreferences (key mengandung: token, auth, session,
+      bearer, jwt, key)
+    - Kunci enkripsi dari Cipher.init() dalam hex dump
+    - Hasil dekripsi dari Cipher.doFinal() dalam string
+    - Token JWT dari Base64.decode()
+    - Kredensial dari AccountManager.getPassword()
+    - Highlight otomatis untuk kata kunci: password, token, secret, key,
+      auth, api_key, credential, pin, otp, session, cookie, jwt, signature
+
+  Apa yang dimonitor:
+    - SQLite INSERT/UPDATE/DELETE
+    - SharedPreferences read/write (filter: auth, token, session, user,
+      credential, secret, key, login)
+    - OkHttp/Retrofit API call
+    - Clipboard copy
+    - WebView JS injection
+
+  Langkah 3: Jalankan All-in-One (Coverage Maksimal)
+  ------------------------------------------------------------------------------
+  Skrip komprehensif untuk tracing semua jenis penyimpanan sensitif.
+
+  Perintah:
+    frida -U -l all-in-one.js -f com.target.app --no-pause
+
+  Fitur tambahan dibanding app-hooker.js:
+    - SSL Pinning bypass (agar traffic terlihat)
+    - Activity lifecycle tracing
+    - Intent monitoring (data antar activity)
+    - ClassLoader monitoring (dynamic dex loading)
+    - BroadcastReceiver monitoring
+    - Runtime.exec monitoring (command injection)
+    - Native crypto (AES_cbc_encrypt)
+    - String comparison tracing (strcmp)
+    - RPC: scanModules() untuk scan memory module
+
+  Menggunakan RPC untuk memory scanning:
+    frida -U -l all-in-one.js -f com.target.app --no-pause
+    # di console Frida, ketik:
+    > rpc.exports.scanModules()
+
+  Langkah 4: Tracing Native Layer (JNI + Native Crypto)
+  ------------------------------------------------------------------------------
+  Untuk melacak data sensitif yang melewati JNI boundary.
+
+  Perintah:
+    frida -U -l native.js -f com.target.app --no-pause
+
+  Apa yang di-trace:
+    - JNI GetStringUTFChars  -> string dari native ke Java
+    - JNI NewStringUTF       -> string dari Java ke native
+    - JNI FindClass          -> class apa yang diakses native
+    - AES_set_encrypt_key    -> dump key AES dari native library
+    - AES_cbc_encrypt        -> dump IV + input plaintext/ciphertext
+    - EVP_EncryptInit_ex     -> OpenSSL encryption init
+    - HMAC_Init_ex           -> HMAC operations
+    - malloc (size >100KB)   -> alokasi memori besar
+    - mprotect (EXEC)        -> deteksi unpacking/dynamic code loading
+    - mmap (anon + EXEC)     -> mapping memori executable
+
+  Langkah 5: Android Detail Tracing
+  ------------------------------------------------------------------------------
+  Jika perlu tracing lebih detail dengan callstack.
+
+  Perintah:
+    frida -U -l android.js -f com.target.app --no-pause
+
+  Keunggulan:
+    - SharedPreferences.getString() menampilkan callstack lengkap
+      (siapa yang membaca data sensitif)
+    - SharedPreferences menampilkan nama file .xml
+    - SQLite insert menampilkan key-value per kolom
+    - Retrofit ServiceMethod.toResponse menampilkan response body
+
+E. LANGKAH-LANGKAH SKENARIO (iOS)
+================================================================================
+
+  Langkah 1: Persiapan Device
+  ------------------------------------------------------------------------------
+  a) Device iOS yang sudah di-jailbreak.
+  b) Install Frida Server via Cydia/Sileo.
+  c) Verifikasi:
+       frida-ps -Ua
+
+  Langkah 2: Jalankan iOS Tracing
+  ------------------------------------------------------------------------------
+  Perintah:
+    frida -U -l ios.js "Nama Aplikasi"
+
+  Atau via toolkit.py:
+    python toolkit.py --ios --app "Nama Aplikasi" --module ios
+
+  Apa yang di-trace:
+    - NSUserDefaults setObject/objectForKey (dump data NSData)
+    - Keychain: SecItemAdd / SecItemCopyMatching / SecItemUpdate / SecItemDelete
+      (dump query + return data dalam hex)
+    - CommonCrypto: CCCrypt (key + IV + input data dalam hex)
+    - UIPasteboard setString / string
+    - NSFileManager: semua operasi file I/O
+    - NSURLSession: HTTP body dalam hex
+    - UIAlertController: title + message
+    - NSNotificationCenter: notification name + userInfo
+    - WKWebView: loadRequest + evaluateJavaScript
+    - dlopen: library loading
+    - Method Swizzling detection
+
+  Langkah 3: Native Layer (iOS)
+  ------------------------------------------------------------------------------
+  native.js juga bekerja di iOS untuk tracing:
+    - Anti-debug bypass (ptrace, sysctl, getppid)
+    - Frida detection bypass (strstr)
+    - Crypto native (AES_cbc_encrypt, EVP_EncryptInit_ex)
+    - String operations (strcmp, strncmp, strstr)
+    - File operations (fopen, open, unlink)
+
+F. ANALISIS OUTPUT
+================================================================================
+
+  Format log Frida:
+    [timestamp] [TAG] pesan
+
+  Contoh output sensitif yang perlu diperhatikan:
+
+  [1] Password captured:
+    [12:34:56.789] [PASSWORD] Captured: "MyS3cretP@ss"
+
+  [2] Token extraction:
+    [12:34:57.123] [TOKEN-SP] auth_token = "eyJhbGciOiJIUzI1NiIs..."
+    [12:34:57.456] [B64-DECODE] JWT-like string decoded [142 chars]
+
+  [3] Crypto key:
+    [12:34:58.001] [CRYPTO] Cipher.init(ENCRYPT) algo=AES
+    [12:34:58.002] [CRYPTO]   Key:
+      00000000: 6a 3f 8c 2d 91 e4 77 b5 48 f2 1a 6d 3c 9e 0b 7d
+
+  [4] Decrypted data:
+    [12:34:58.500] [CRYPTO] Cipher.doFinal in=256B out=240B
+    [12:34:58.501] [CRYPTO]   Decrypted: {"user":"admin","role":"superadmin"}
+
+  [5] SharedPreferences sensitive read (dengan callstack):
+    [12:34:59.000] [SP-READ] getString("api_secret", "null") = "sk-abc123..."
+      Callstack:
+        com.example.app.AuthManager.getSecret(AuthManager.java:45)
+        com.example.app.LoginActivity.onLogin(LoginActivity.java:120)
+
+  [6] JNI string passing:
+    [12:35:00.100] [JNI] NewStringUTF("AES256SecretKey!!")
+    [12:35:00.200] [JNI] GetStringUTFChars => "decrypted-token-value"
+
+  [7] Keychain (iOS):
+    [12:35:01.000] [KEYCHAIN] SecItemCopyMatching: {acct: admin, svce: MyApp, ...}
+    [12:35:01.001] [KEYCHAIN]   Data (32B):
+      00000000: 4a 5f 8c 2d 91 e4 77 b5 48 f2 1a 6d 3c 9e 0b 7d
+
+  [8] Clipboard:
+    [12:35:02.000] [CLIPBOARD] setPrimaryClip
+    [12:35:02.001] [CLIPBOARD]   Item[0]: "nOobRaQiaXeMooBeeX3ahW"
+
+G. FLOW SKENARIO VISUAL
+================================================================================
+
+  +-------------------+
+  |   APLIKASI        |
+  |   TARGET          |
+  +--------+----------+
+           |
+           v
+  +-------------------+     +---------------------------+
+  |  FRIDA ENGINE     |---->| HOOK LAYER                |
+  |  (Runtime)        |     |                           |
+  +-------------------+     | app-hooker.js (Layer 1)   |
+                            |  +- EditText.getText()     |
+                            |  +- SP.getString()         |
+                            |  +- Cipher.init/doFinal()  |
+                            |  +- Base64.decode()        |
+                            |  +- AccountManager         |
+                            |                           |
+                            | all-in-one.js (Layer 2)   |
+                            |  +- SharedPreferences      |
+                            |  +- SQLite Database        |
+                            |  +- KeyStore               |
+                            |  +- Clipboard              |
+                            |  +- Crypto + Mac + Digest  |
+                            |  +- scanModules() RPC      |
+                            |                           |
+                            | android.js (Layer 3)      |
+                            |  +- SP + callstack trace   |
+                            |  +- Detailed SQLite        |
+                            |                           |
+                            | native.js (Layer 4)       |
+                            |  +- JNI string hooks       |
+                            |  +- AES native key dump    |
+                            |  +- malloc / mprotect      |
+                            +---------------------------+
+           |
+           v
+  +-------------------+
+  |  OUTPUT LOG       |
+  |  (Console)        |
+  |  + Password       |
+  |  + Token          |
+  |  + Key (hex)      |
+  |  + Decrypted data |
+  |  + Callstack      |
+  +-------------------+
+
+H. KOMBINASI SKRIP YANG DIREKOMENDASIKAN
+================================================================================
+
+  Untuk tracing paling lengkap, jalankan secara berurutan atau paralel:
+
+  Sesi 1 (Android - Layer Atas):
+    frida -U -l app-hooker.js -f com.target.app --no-pause
+
+  Sesi 2 (Android - Native):
+    frida -U -l native.js -n com.target.app
+
+  Sesi 3 (Alternatif):
+    frida -U -l all-in-one.js -n com.target.app
+
+  Untuk iOS:
+    frida -U -l ios.js "App Name"
+    (native.js juga kompatibel dengan iOS)
+
+I. TIPS ANALISIS
+================================================================================
+  1. Gunakan grep untuk filter output:
+       frida -U -l app-hooker.js -f com.target.app | grep -i "password\|token\|key\|secret"
+
+  2. Redirect output ke file untuk analisis offline:
+       frida -U -l all-in-one.js -f com.target.app > output.txt 2>&1
+
+  3. Gunakan multiple terminal: satu untuk app-hooker (layer Java), satu
+     untuk native.js (layer C/C++).
+
+  4. Perhatikan timestamp untuk korelasi antar event (misalnya: user input
+     password -> cipher init -> token tersimpan di SharedPreferences).
+
+  5. Keyword filter di app-hooker.js (baris 58-61) bisa disesuaikan untuk
+     menambah kata kunci spesifik aplikasi target.
+
+================================================================================
+                          END OF DOCUMENT
+================================================================================

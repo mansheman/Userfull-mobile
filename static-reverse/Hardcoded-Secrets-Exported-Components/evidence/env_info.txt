@@ -1,0 +1,4 @@
+﻿=== ADB Devices ===
+sdk_gphone64_x86_64
+34
+=== Exported Components ===

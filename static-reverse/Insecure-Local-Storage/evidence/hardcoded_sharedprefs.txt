@@ -1,0 +1,53 @@
+=== Lab 3: SharedPreferences Analysis — Data Storage Mechanisms ===
+Target: com.android.insecurebankv2
+Date: 2026-07-13
+
+--- SharedPreferences File Name ---
+mySharedPreferences
+
+--- Storage Key Analysis ---
+
+| Key | Value Transformation | Storage Mechanism | Security Level |
+|-----|---------------------|-------------------|----------------|
+| EncryptedUsername | Base64.encodeToString(username, 4) | Base64 (NOT encryption) | NONE — trivially decoded |
+| superSecurePassword | CryptoClass.aesEncryptedString(password) | AES-256/CBC/PKCS5Padding | BREAKABLE — key hardcoded in source |
+| serverip | Plain text (via PreferenceManager) | Default SharedPreferences | NONE |
+| serverport | Plain text (via PreferenceManager) | Default SharedPreferences | NONE |
+
+--- CryptoClass Analysis (CryptoClass.java:22-23) ---
+AES Key:     "This is the super secret key 123"
+IV Vector:   {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}  (all zeros)
+Algorithm:   AES-256/CBC/PKCS5Padding
+
+CWE Classification:
+- CWE-321: Use of Hard-coded Cryptographic Key
+- CWE-325: Missing Required Cryptographic Step (static IV)
+- CWE-312: Cleartext Storage of Sensitive Information (username Base64)
+
+--- Files Accessing mySharedPreferences ---
+
+| File | Line | Mode | Operation |
+|------|------|------|-----------|
+| DoLogin.java | 140 | MODE_PRIVATE (0) | WRITE (putString) |
+| DoLogin.java | 39 | (constant) | MYPREFS = "mySharedPreferences" |
+| DoTransfer.java | 104 | MODE_PRIVATE (0) | READ (getString) |
+| DoTransfer.java | 217 | MODE_PRIVATE (0) | READ (getString) |
+| LoginActivity.java | 74 | MODE_PRIVATE (0) | READ (getString) |
+| MyBroadCastReceiver.java | 21 | MODE_WORLD_READABLE (1) | READ (getString) |
+
+--- CRITICAL: MyBroadCastReceiver.java:21 ---
+SharedPreferences settings = context.getSharedPreferences("mySharedPreferences", 1);
+                                                                             ^
+                                                     MODE_WORLD_READABLE = 1
+
+This opens the preferences file with WORLD-READABLE permissions on Android < 7 (API 24).
+Confirmed: File permissions are rw-rw-rw- (666).
+
+--- Decryption Proof of Concept ---
+The hardcoded AES key can be extracted from any decompiled APK:
+$ jadx -d output InsecureBankv2.apk
+$ grep "super secret key" output/sources/com/android/insecurebankv2/CryptoClass.java
+String key = "This is the super secret key 123";
+
+With this key and the all-zeros IV, an attacker can decrypt any password stored
+in mySharedPreferences.xml.

