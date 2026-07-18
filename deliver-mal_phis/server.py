@@ -482,6 +482,7 @@ def fetch_universal_og(url):
 # ============================================================================
 
 @app.route("/")
+@app.route("/go")
 def index():
     """Default: redirect to /v with target URL"""
     return redirect(f"/v?id={urllib.parse.quote(TARGET_URL)}", code=302)
@@ -548,7 +549,11 @@ def video():
     <p>Redirecting to {og['site_name']}...</p>
 </body>
 </html>"""
-        return Response(html, mimetype="text/html")
+        response = Response(html, mimetype="text/html")
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
     
     else:
         # === RESPONS UNTUK REAL USER ===
