@@ -1,0 +1,22 @@
+# Payload files (too large for git)
+*.apk
+*.exe
+*.dll
+*.msi
+*.dmg
+*.iso
+
+# Logs
+*.log
+
+# Config backups
+config_*.py
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# OS
+.DS_Store
+Thumbs.db
