@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Fake</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f0f; color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+.container { max-width: 800px; width: 100%; padding: 20px; }
+h1 { text-align: center; margin: 20px 0; font-size: 1.8rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.video-wrapper { width: 100%; max-width: 640px; margin: 0 auto; border-radius: 12px; overflow: hidden; box-shadow: 0 0 30px rgba(102, 126, 234, 0.3); background: #1a1a1a; aspect-ratio: 4/3; position: relative; }
+.video-wrapper video, .video-wrapper img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.controls { margin-top: 15px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.upload-area { width: 100%; max-width: 400px; border: 2px dashed #555; border-radius: 10px; padding: 15px; text-align: center; cursor: pointer; transition: all .3s; }
+.upload-area:hover { border-color: #667eea; background: rgba(102, 126, 234, 0.1); }
+.upload-area.dragover { border-color: #667eea; background: rgba(102, 126, 234, 0.15); }
+.upload-area input { display: none; }
+.upload-area p { color: #888; font-size: 0.9rem; }
+.upload-area.has-image { border-color: #4caf50; }
+.btn { padding: 10px 25px; border: none; border-radius: 8px; font-size: 0.95rem; cursor: pointer; transition: all .3s; font-weight: 500; }
+.btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-danger { background: #e74c3c; color: #fff; }
+.btn-danger:hover { background: #c0392b; }
+.btn-success { background: #2ecc71; color: #fff; }
+.btn-success:hover { background: #27ae60; }
+.status { text-align: center; padding: 8px 15px; border-radius: 6px; font-size: 0.85rem; margin-top: 8px; min-height: 36px; }
+.status.idle { background: #222; color: #888; }
+.status.active { background: rgba(76, 175, 80, 0.15); color: #4caf50; }
+.status.error { background: rgba(231, 76, 60, 0.15); color: #e74c3c; }
+.status.loading { background: rgba(52, 152, 219, 0.15); color: #3498db; }
+.thumb { max-width: 80px; max-height: 80px; border-radius: 8px; margin-top: 8px; display: none; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.info { text-align: center; font-size: 0.75rem; color: #555; margin-top: 15px; }
+.fps { text-align: center; font-size: 0.8rem; color: #666; margin-top: 5px; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>&#9670; Deep Fake</h1>
+
+<div class="video-wrapper">
+<video id="clientCam" autoplay playsinline muted style="display:none"></video>
+<img id="clientResult" src="" alt="Hasil" style="display:none">
+</div>
+
+<div class="controls">
+<div class="row">
+<button class="btn btn-success" id="startBtn" onclick="startCam()">Mulai Kamera</button>
+<button class="btn btn-danger" id="stopBtn" onclick="stopCam()" style="display:none">Stop</button>
+</div>
+<div class="fps" id="fpsDisplay"></div>
+
+<div class="upload-area" id="uploadArea">
+<input type="file" id="imageInput" accept="image/*">
+<p id="uploadText">Klik untuk upload foto wajah target</p>
+<img id="preview" class="thumb">
+</div>
+<div class="row">
+<button class="btn btn-primary" id="applyBtn" onclick="uploadImage()" disabled>Terapkan Wajah</button>
+<button class="btn btn-danger" onclick="resetFace()">Reset</button>
+</div>
+<div id="status" class="status idle">Upload foto wajah target untuk memulai</div>
+<div class="info"><span id="ipDisplay"></span>:5000</div>
+</div>
+</div>
+
+<script>
+let selectedFile = null;
+let clientStream = null;
+let clientRunning = false;
+let isProcessing = false;
+let stopRequested = false;
+let fpsHistory = [];
+let lastFrameTime = 0;
+
+document.getElementById('uploadArea').addEventListener('click', () => document.getElementById('imageInput').click());
+document.getElementById('uploadArea').addEventListener('dragover', (e) => { e.preventDefault(); e.currentTarget.classList.add('dragover'); });
+document.getElementById('uploadArea').addEventListener('dragleave', (e) => { e.currentTarget.classList.remove('dragover'); });
+document.getElementById('uploadArea').addEventListener('drop', (e) => {
+    e.preventDefault(); e.currentTarget.classList.remove('dragover');
+    if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+});
+document.getElementById('imageInput').addEventListener('change', (e) => {
+    if (e.target.files.length > 0) handleFile(e.target.files[0]);
+});
+
+function handleFile(file) {
+    selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('preview').src = e.target.result;
+        document.getElementById('preview').style.display = 'block';
+        document.getElementById('uploadText').textContent = file.name;
+        document.getElementById('uploadArea').classList.add('has-image');
+        document.getElementById('applyBtn').disabled = false;
+        setStatus('Foto siap. Klik Terapkan Wajah', 'idle');
+    };
+    reader.readAsDataURL(file);
+}
+
+async function uploadImage() {
+    if (!selectedFile) { setStatus('Pilih foto dulu!', 'error'); return; }
+    const formData = new FormData();
+    formData.append('image', selectedFile);
+    setStatus('Memproses foto...', 'loading');
+    try {
+        const resp = await fetch('/upload', { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (data.error) setStatus('Error: ' + data.error, 'error');
+        else setStatus('Wajah diterapkan!', 'active');
+    } catch (err) {
+        setStatus('Gagal: ' + err.message, 'error');
+    }
+}
+
+async function resetFace() {
+    try {
+        await fetch('/reset');
+        setStatus('Wajah di-reset', 'idle');
+        document.getElementById('preview').style.display = 'none';
+        document.getElementById('uploadText').textContent = 'Klik untuk upload foto wajah target';
+        document.getElementById('uploadArea').classList.remove('has-image');
+        selectedFile = null;
+        document.getElementById('applyBtn').disabled = true;
+    } catch (err) {
+        setStatus('Gagal reset', 'error');
+    }
+}
+
+async function startCam() {
+    try {
+        clientStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 480 }, height: { ideal: 360 }, facingMode: 'user' }
+        });
+        const video = document.getElementById('clientCam');
+        video.srcObject = clientStream;
+        video.style.display = 'block';
+        document.getElementById('clientResult').style.display = 'none';
+        clientRunning = true;
+        stopRequested = false;
+        document.getElementById('startBtn').style.display = 'none';
+        document.getElementById('stopBtn').style.display = 'inline-block';
+        setStatus('Kamera aktif', 'info');
+        isProcessing = false;
+        fpsHistory = [];
+        lastFrameTime = 0;
+        loop();
+    } catch (err) {
+        setStatus('Gagal akses kamera: ' + err.message, 'error');
+        if (err.name === 'NotAllowedError' || err.name === 'NotFoundError') {
+            setStatus('Izin kamera ditolak atau kamera tidak ditemukan. Pastikan akses via HTTPS.', 'error');
+        }
+    }
+}
+
+function stopCam() {
+    stopRequested = true;
+    clientRunning = false;
+    if (clientStream) clientStream.getTracks().forEach(t => t.stop());
+    clientStream = null;
+    document.getElementById('clientCam').style.display = 'none';
+    document.getElementById('clientResult').style.display = 'none';
+    document.getElementById('startBtn').style.display = 'inline-block';
+    document.getElementById('stopBtn').style.display = 'none';
+    document.getElementById('fpsDisplay').textContent = '';
+    isProcessing = false;
+}
+
+async function loop() {
+    if (stopRequested || !clientRunning) return;
+    if (isProcessing) { requestAnimationFrame(loop); return; }
+    const video = document.getElementById('clientCam');
+    if (!video.videoWidth) { requestAnimationFrame(loop); return; }
+    isProcessing = true;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    try {
+        const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.6));
+        if (!blob) { isProcessing = false; requestAnimationFrame(loop); return; }
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), 15000);
+        const fd = new FormData();
+        fd.append('image', blob, 'frame.jpg');
+        const resp = await fetch('/process', { method: 'POST', body: fd, signal: controller.signal });
+        clearTimeout(tid);
+        if (!resp.ok) { isProcessing = false; requestAnimationFrame(loop); return; }
+        const resultBlob = await resp.blob();
+        const url = URL.createObjectURL(resultBlob);
+        const img = document.getElementById('clientResult');
+        img.src = url;
+        img.style.display = 'block';
+        video.style.display = 'none';
+        const now = performance.now();
+        if (lastFrameTime > 0) {
+            const fps = 1000 / (now - lastFrameTime);
+            fpsHistory.push(fps);
+            if (fpsHistory.length > 20) fpsHistory.shift();
+            document.getElementById('fpsDisplay').textContent =
+                (fpsHistory.reduce((a, b) => a + b, 0) / fpsHistory.length).toFixed(1) + ' FPS';
+        }
+        lastFrameTime = now;
+    } catch (err) {
+        if (err.name === 'AbortError') setStatus('Request timeout', 'error');
+    }
+    isProcessing = false;
+    if (!stopRequested) requestAnimationFrame(loop);
+}
+
+function setStatus(msg, type) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = 'status ' + type;
+}
+
+document.getElementById('ipDisplay').textContent = window.location.hostname;
+</script>
+</body>
+</html>
