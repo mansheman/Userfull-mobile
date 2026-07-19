@@ -1,6 +1,6 @@
 # Phishing Lab - JAGA
 
-Reversing dan rekonstruksi mobile phishing kit yang menyamar sebagai halaman kampanye ** JAGA** — dengan eksfiltrasi kamera, lokasi GPS, dan data perangkat via Telegram C2.
+Reversing dan rekonstruksi mobile phishing kit yang menyamar sebagai halaman kampanye **JAGA** — dengan eksfiltrasi kamera, lokasi GPS, dan data perangkat via Telegram C2.
 
 ---
 
