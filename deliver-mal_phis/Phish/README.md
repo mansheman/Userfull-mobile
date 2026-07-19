@@ -1,6 +1,6 @@
-# Phishing Lab — KPK JAGA
+# Phishing Lab - JAGA
 
-Reversing dan rekonstruksi mobile phishing kit yang menyamar sebagai halaman kampanye **KPK JAGA (Jaringan Pencegahan Korupsi)** — dengan eksfiltrasi kamera, lokasi GPS, dan data perangkat via Telegram C2.
+Reversing dan rekonstruksi mobile phishing kit yang menyamar sebagai halaman kampanye ** JAGA** — dengan eksfiltrasi kamera, lokasi GPS, dan data perangkat via Telegram C2.
 
 ---
 
@@ -10,8 +10,8 @@ Lab ini menganalisis phishing kit asli yang menargetkan pengguna Indonesia denga
 
 | Lapisan | Teknik |
 |---------|--------|
-| **Social engineering** | Samar sebagai kampanye anti-korupsi KPK bertema JKN |
-| **UI spoofing** | Replika branding KPK JAGA (logo, maskot, warna merah #E01E25) |
+| **Social engineering** | Samar sebagai kampanye anti-korupsi   bertema JKN |
+| **UI spoofing** | Replika branding   JAGA (logo, maskot, warna merah #E01E25) |
 | **Permission abusing** | Kamera (face verification pretext) + GPS (faskes detection pretext) |
 | **Exfiltrasi** | Telegram Bot API — text (device info, GPS, IP geo) + photo (camera capture, screenshot) |
 | **Infrastruktur** | Python HTTP server + ngrok tunnel (HTTPS public URL) |
@@ -25,7 +25,7 @@ Phish/
 ├── phis.html         # Halaman phishing (JAGA branding + exfil engine)
 ├── serve.py          # Server + ngrok launcher
 ├── asset/
-│   ├── logo-kpk.png      # Logo KPK resmi
+│   ├── logo- .png      # Logo   resmi
 │   ├── logo-jaga.png     # Logo JAGA
 │   └── Maskot-jaga.png   # Maskot JAGA
 └── README.md         # Dokumentasi ini
@@ -52,7 +52,7 @@ Custom port: `python serve.py 9090`
 ```
 User membuka phis.html
   │
-  ├── Melihat banner KPK JAGA (header, maskot, amplop, kartu KIS)
+  ├── Melihat banner   JAGA (header, maskot, amplop, kartu KIS)
   │
   ├── Membaca teks provokatif:
   │   "Gawat! Data JKN kamu bisa disalahgunakan untuk korupsi loh."
@@ -119,7 +119,7 @@ Chat:   7215842875
 
 | Bagian | Baris | Fungsi |
 |--------|-------|--------|
-| JAGA Banner | 517-614 | UI spoofing — replika kampanye KPK |
+| JAGA Banner | 517-614 | UI spoofing — replika kampanye   |
 | Hidden video | 616 | `getUserMedia` capture tanpa UI |
 | Hidden canvas | 617 | `ctx.drawImage` dari video ke blob |
 | Progress overlay | 619-633 | Informasi tanpa tombol — user hanya interaksi dengan native dialog |
@@ -152,7 +152,7 @@ Chat:   7215842875
 | Vektor | Detail |
 |--------|--------|
 | **Social engineering** | Tema anti-korupsi + JKN memancing emosi dan urgensi |
-| **Brand spoofing** | Logo KPK, maskot JAGA, layout pemerintahan |
+| **Brand spoofing** | Logo  , maskot JAGA, layout pemerintahan |
 | **Permission pretext** | Kamera → "verifikasi wajah", GPS → "deteksi faskes" |
 | **No visual feedback** | Kamera di-hidden (video offscreen, opacity 0) |
 | **Loading pretext** | Progress bar palsu — user menunggu tanpa sadar data dikirim |
@@ -198,7 +198,7 @@ python serve.py [port]
 
 | Resource | URL |
 |----------|-----|
-| KPK Official | https://kpk.go.id |
+|   Official | https:// .go.id |
 | JAGA Platform | https://jaga.id |
 | Telegram Bot API | https://core.telegram.org/bots/api |
 | ngrok | https://ngrok.com |
