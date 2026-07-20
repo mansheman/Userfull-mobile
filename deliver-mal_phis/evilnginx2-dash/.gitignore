@@ -1,0 +1,15 @@
+release/
+build/
+private/
+/phishlets
+!/phishlets/example.yaml
+
+# OS / editor cruft
+.DS_Store
+
+# build artifacts (binary + staged copies produced by deploy/build-linux.sh)
+deploy/out/
+
+# dashboard frontend: node_modules ignored; dist/ is committed (embedded via go:embed)
+dashboard/web/node_modules/
+dashboard/web/.vite/

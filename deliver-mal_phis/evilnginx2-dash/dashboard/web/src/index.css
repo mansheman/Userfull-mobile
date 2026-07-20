@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* ===== Theme tokens ===== */
+/* dark = "dark red" command-console; light = muted/dim (not bright) */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d0608;
+  --surface: #160b0e;
+  --surface-2: #1e0f13;
+  --surface-3: #271419;
+  --border: #3a1d23;
+  --border-strong: #5a2a31;
+  --text: #f4e9ea;
+  --text-muted: #c6a9ad;
+  --text-dim: #8d7376;
+  --accent: #ff4d4f;
+  --accent-strong: #ff6b6d;
+  --accent-weak: rgba(255, 77, 79, 0.14);
+  --ok: #46d39a;
+  --ok-weak: rgba(70, 211, 154, 0.14);
+  --warn: #ecb24a;
+  --warn-weak: rgba(236, 178, 74, 0.14);
+  --danger: #ff6b6b;
+  --danger-weak: rgba(255, 77, 79, 0.16);
+  --info: #5aa9f0;
+  --info-weak: rgba(90, 169, 240, 0.14);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #d9d2d2;
+  --surface: #e8e1e1;
+  --surface-2: #d2c8c8;
+  --surface-3: #c7bcbc;
+  --border: #c2b4b4;
+  --border-strong: #a89898;
+  --text: #241618;
+  --text-muted: #5e4a4d;
+  --text-dim: #897a7c;
+  --accent: #be2f2c;
+  --accent-strong: #9d2421;
+  --accent-weak: rgba(190, 47, 44, 0.12);
+  --ok: #1f9d6b;
+  --ok-weak: rgba(31, 157, 107, 0.13);
+  --warn: #a9721a;
+  --warn-weak: rgba(169, 114, 26, 0.13);
+  --danger: #b3271f;
+  --danger-weak: rgba(179, 39, 31, 0.12);
+  --info: #275ea6;
+  --info-weak: rgba(39, 94, 166, 0.12);
+}
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}

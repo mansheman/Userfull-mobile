@@ -1,0 +1,27 @@
+[Unit]
+Description=evilginx2 (red-team engagement) + dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Runs as root for privileged ports (53/80/443). The dashboard binds to
+# loopback only — reach it over an SSH tunnel, never expose 8080 publicly.
+User=root
+WorkingDirectory=/opt/evilginx
+# Dashboard admin password lives in this file (created by deploy/push.sh on first
+# deploy), so redeploys don't reset it. The '-' makes it optional.
+EnvironmentFile=-/opt/evilginx/dashboard.env
+# -headless: no interactive terminal under systemd; the process stays up serving
+# the engine + dashboard until SIGINT/SIGTERM. Without it the readline loop hits
+# EOF (no TTY) and the process exits 0 immediately.
+ExecStart=/opt/evilginx/evilginx -headless -p /opt/evilginx/phishlets -t /opt/evilginx/redirectors -c /opt/evilginx/.evilginx -dashboard -dashboard-addr 127.0.0.1:8080
+Restart=on-failure
+RestartSec=5
+# Allow binding low ports without full root if you later switch User=
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+NoNewPrivileges=false
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
